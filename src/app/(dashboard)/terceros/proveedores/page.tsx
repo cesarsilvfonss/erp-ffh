@@ -1,16 +1,13 @@
-"use client";
+import { prisma } from "@/lib/prisma";
+import { Search, Edit2, Trash2 } from "lucide-react";
+import { CreateProviderModal } from "@/components/providers/CreateProviderModal";
 
-import { useState } from "react";
-import { Plus, Search, Edit2, Trash2 } from "lucide-react";
-import { motion } from "framer-motion";
+export const dynamic = "force-dynamic";
 
-export default function ProveedoresPage() {
-  const [searchTerm, setSearchTerm] = useState("");
-
-  const mockProveedores = [
-    { id: "1", legalName: "Ganadera San Juan S.A.", contact: "Juan Pérez", phone: "0981 123 456", email: "contacto@sanjuan.com" },
-    { id: "2", legalName: "Estancia El Ombú", contact: "María Gómez", phone: "0982 987 654", email: "ventas@elombu.com.py" },
-  ];
+export default async function ProveedoresPage() {
+  const proveedores = await prisma.provider.findMany({
+    orderBy: { createdAt: "desc" },
+  });
 
   return (
     <div className="space-y-6">
@@ -19,10 +16,7 @@ export default function ProveedoresPage() {
           <h1 className="text-2xl font-bold text-zinc-100">Proveedores</h1>
           <p className="text-zinc-400 text-sm mt-1">Gestión de proveedores de ganado y servicios.</p>
         </div>
-        <button className="bg-emerald-500 hover:bg-emerald-600 text-zinc-950 px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 shadow-lg shadow-emerald-500/20">
-          <Plus className="w-4 h-4" />
-          Nuevo Proveedor
-        </button>
+        <CreateProviderModal />
       </div>
 
       <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl overflow-hidden">
@@ -31,9 +25,7 @@ export default function ProveedoresPage() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
             <input 
               type="text"
-              placeholder="Buscar por nombre, RUC o contacto..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Buscar por nombre o contacto..."
               className="w-full bg-zinc-950 border border-zinc-800 rounded-lg pl-10 pr-4 py-2 text-sm text-zinc-100 focus:outline-none focus:border-emerald-500/50 transition-all"
             />
           </div>
@@ -51,18 +43,12 @@ export default function ProveedoresPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-800 text-zinc-300">
-              {mockProveedores.map((prov, i) => (
-                <motion.tr 
-                  key={prov.id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.05 }}
-                  className="hover:bg-zinc-800/50 transition-colors group"
-                >
+              {proveedores.map((prov) => (
+                <tr key={prov.id} className="hover:bg-zinc-800/50 transition-colors group">
                   <td className="px-6 py-4 font-medium text-zinc-100">{prov.legalName}</td>
-                  <td className="px-6 py-4">{prov.contact}</td>
-                  <td className="px-6 py-4">{prov.phone}</td>
-                  <td className="px-6 py-4">{prov.email}</td>
+                  <td className="px-6 py-4">{prov.contact || "-"}</td>
+                  <td className="px-6 py-4">{prov.phone || "-"}</td>
+                  <td className="px-6 py-4">{prov.email || "-"}</td>
                   <td className="px-6 py-4 text-right space-x-2">
                     <button className="p-1.5 text-zinc-400 hover:text-cyan-400 rounded-md hover:bg-cyan-400/10 transition-colors">
                       <Edit2 className="w-4 h-4" />
@@ -71,13 +57,13 @@ export default function ProveedoresPage() {
                       <Trash2 className="w-4 h-4" />
                     </button>
                   </td>
-                </motion.tr>
+                </tr>
               ))}
             </tbody>
           </table>
-          {mockProveedores.length === 0 && (
+          {proveedores.length === 0 && (
             <div className="p-8 text-center text-zinc-500">
-              No se encontraron proveedores
+              No hay proveedores registrados. ¡Crea el primero!
             </div>
           )}
         </div>
