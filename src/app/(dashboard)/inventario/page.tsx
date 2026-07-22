@@ -1,0 +1,106 @@
+import { prisma } from "@/lib/prisma";
+import Link from "next/link";
+import { PackageSearch, TrendingUp } from "lucide-react";
+
+export const dynamic = "force-dynamic";
+
+export default async function InventoryPage() {
+  const inventory = await prisma.inventory.findMany({
+    include: {
+      batch: {
+        include: { provider: true }
+      }
+    },
+    orderBy: { updatedAt: "desc" },
+  });
+
+  // Calcular métricas
+  const totalKg = inventory.reduce((acc, item) => acc + item.availableStock, 0);
+  const totalValue = inventory.reduce((acc, item) => acc + item.totalValue, 0);
+  const avgCostPerKg = totalKg > 0 ? totalValue / totalKg : 0;
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold text-zinc-100">Inventario de Carne</h1>
+        <p className="text-zinc-400 text-sm mt-1">Stock valorizado de carne disponible para venta.</p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-6 relative overflow-hidden">
+          <div className="absolute top-0 right-0 p-4 opacity-10">
+            <PackageSearch className="w-16 h-16 text-emerald-500" />
+          </div>
+          <p className="text-zinc-400 text-sm font-medium mb-1">Stock Disponible</p>
+          <p className="text-3xl font-bold text-zinc-100">{totalKg.toLocaleString(undefined, { maximumFractionDigits: 1 })} <span className="text-lg text-zinc-500">KG</span></p>
+        </div>
+
+        <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-6 relative overflow-hidden">
+          <div className="absolute top-0 right-0 p-4 opacity-10">
+            <TrendingUp className="w-16 h-16 text-cyan-500" />
+          </div>
+          <p className="text-zinc-400 text-sm font-medium mb-1">Costo Promedio / KG</p>
+          <p className="text-3xl font-bold text-cyan-400">
+            <span className="text-lg text-cyan-400/50 mr-1">₲</span>
+            {avgCostPerKg.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+          </p>
+        </div>
+
+        <div className="bg-emerald-950/30 border border-emerald-900/50 rounded-xl p-6 relative overflow-hidden">
+          <p className="text-emerald-400/80 text-sm font-medium mb-1">Valor Total del Inventario</p>
+          <p className="text-3xl font-bold text-emerald-400">
+            <span className="text-lg text-emerald-400/50 mr-1">₲</span>
+            {totalValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+          </p>
+        </div>
+      </div>
+
+      <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl overflow-hidden mt-8">
+        <div className="p-4 border-b border-zinc-800">
+          <h2 className="font-semibold text-zinc-100">Detalle de Stock por Lote</h2>
+        </div>
+        
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm">
+            <thead className="bg-zinc-950 text-zinc-400">
+              <tr>
+                <th className="px-6 py-3 font-medium">Lote de Origen</th>
+                <th className="px-6 py-3 font-medium">Categoría</th>
+                <th className="px-6 py-3 font-medium text-right">KG Disponibles</th>
+                <th className="px-6 py-3 font-medium text-right">Costo / KG</th>
+                <th className="px-6 py-3 font-medium text-right">Valor Total</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-zinc-800 text-zinc-300">
+              {inventory.map((item) => (
+                <tr key={item.id} className="hover:bg-zinc-800/50 transition-colors group">
+                  <td className="px-6 py-4">
+                    <div className="font-medium text-zinc-100">#{item.batch.batchNumber.toString().padStart(4, '0')}</div>
+                    <div className="text-xs text-zinc-500">{item.batch.provider.legalName}</div>
+                  </td>
+                  <td className="px-6 py-4 font-medium">{item.category}</td>
+                  <td className="px-6 py-4 text-right">
+                    <span className="px-2 py-1 bg-emerald-500/10 text-emerald-400 rounded-md font-medium">
+                      {item.availableStock.toLocaleString()} KG
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 text-right font-mono text-zinc-400">
+                    ₲ {item.costPerKg.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                  </td>
+                  <td className="px-6 py-4 text-right font-medium text-emerald-400">
+                    ₲ {item.totalValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {inventory.length === 0 && (
+            <div className="p-8 text-center text-zinc-500">
+              El inventario está vacío. Registra una faena para generar stock.
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
