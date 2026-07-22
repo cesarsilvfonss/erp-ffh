@@ -23,7 +23,7 @@ const menuItems = [
   { icon: CircleDollarSign, label: "Ventas", href: "/ventas" },
   { icon: ArrowRightLeft, label: "Finanzas", href: "/finanzas" },
   { icon: Wallet, label: "Cuentas por Cobrar/Pagar", href: "/cuentas" },
-  { icon: Users, label: "Terceros", href: "/terceros" },
+  { icon: Users, label: "Terceros (Proveedores)", href: "/terceros/proveedores" },
   { icon: Settings, label: "Configuración", href: "/configuracion" },
 ];
 
