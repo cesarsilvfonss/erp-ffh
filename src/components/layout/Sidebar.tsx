@@ -17,7 +17,7 @@ import { motion } from "framer-motion";
 
 const menuItems = [
   { icon: LayoutDashboard, label: "Dashboard", href: "/" },
-  { icon: Store, label: "Compras (Lotes)", href: "/compras" },
+  { icon: Store, label: "Compras (Lotes)", href: "/operaciones/lotes" },
   { icon: Factory, label: "Faena", href: "/faena" },
   { icon: Beef, label: "Inventario", href: "/inventario" },
   { icon: CircleDollarSign, label: "Ventas", href: "/ventas" },
