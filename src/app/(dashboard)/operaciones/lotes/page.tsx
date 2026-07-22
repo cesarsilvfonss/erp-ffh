@@ -68,7 +68,7 @@ export default async function BatchesPage() {
                     <td className="px-6 py-4 font-medium text-zinc-100">
                       #{batch.batchNumber.toString().padStart(4, '0')}
                     </td>
-                    <td className="px-6 py-4">{batch.date.toLocaleDateString()}</td>
+                    <td className="px-6 py-4">{new Date(batch.date).toLocaleDateString()}</td>
                     <td className="px-6 py-4">{batch.provider.legalName}</td>
                     <td className="px-6 py-4">{totalHeads}</td>
                     <td className="px-6 py-4">{getStatusBadge(batch.status)}</td>

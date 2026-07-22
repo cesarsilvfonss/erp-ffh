@@ -42,7 +42,7 @@ export default async function BatchDetailsPage({ params }: { params: { id: strin
               Lote #{batch.batchNumber.toString().padStart(4, '0')}
             </h1>
             <p className="text-zinc-400 text-sm mt-1">
-              Proveedor: {batch.provider.legalName} | Fecha: {batch.date.toLocaleDateString()}
+              Proveedor: {batch.provider.legalName} | Fecha: {new Date(batch.date).toLocaleDateString()}
             </p>
           </div>
         </div>
@@ -166,7 +166,7 @@ export default async function BatchDetailsPage({ params }: { params: { id: strin
               </div>
               <div className="flex justify-between border-b border-zinc-800 pb-2">
                 <span className="text-zinc-500">Fecha</span>
-                <span className="text-zinc-100">{batch.date.toLocaleDateString()}</span>
+                <span className="text-zinc-100">{new Date(batch.date).toLocaleDateString()}</span>
               </div>
               <div className="flex justify-between border-b border-zinc-800 pb-2">
                 <span className="text-zinc-500">Proveedor</span>
