@@ -1,0 +1,358 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ========================================
+// 1. Usuarios y Seguridad
+// ========================================
+
+enum RoleEnum {
+  ADMIN
+  OPERATOR
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String
+  role      RoleEnum @default(OPERATOR)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  auditLogs    AuditLog[]
+  transactions Transaction[]
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  action    String   // CREATE, UPDATE, DELETE
+  entity    String   // Table name
+  entityId  String   // Record ID
+  oldValue  String?  // JSON stringified
+  newValue  String?  // JSON stringified
+  createdAt DateTime @default(now())
+}
+
+// ========================================
+// 2. Parámetros del Sistema
+// ========================================
+
+model Parameter {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  value       String   // Stringified value
+  description String?
+  updatedAt   DateTime @updatedAt
+}
+
+// ========================================
+// 3. Catálogos Base (Terceros y Artículos)
+// ========================================
+
+model Provider {
+  id        String   @id @default(cuid())
+  legalName String
+  tradeName String?
+  phone     String?
+  email     String?
+  contact   String?
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  batches         Batch[]
+  expenses        Expense[]
+  accountsPayable AccountPayable[]
+}
+
+model Client {
+  id              String   @id @default(cuid())
+  legalName       String
+  tradeName       String?
+  phone           String?
+  email           String?
+  contact         String?
+  paymentTermDays Int      @default(0)
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  sales              Sale[]
+  accountsReceivable AccountReceivable[]
+}
+
+model Item {
+  id          String   @id @default(cuid())
+  code        String   @unique
+  name        String
+  category    String   // Carne, Menudencia, etc.
+  unit        String   // KG, UN
+  description String?
+  status      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  saleDetails SaleDetail[]
+}
+
+// ========================================
+// 4. Operaciones Ganaderas (Compra / Romaneo / Faena)
+// ========================================
+
+enum BatchStatus {
+  OPEN         // Abierto
+  IN_SLAUGHTER // En faena
+  IN_SALE      // En venta
+  SOLD         // Vendido
+  CLOSED       // Cerrado
+}
+
+enum AnimalCategory {
+  VACA
+  TORO
+  VAQUILLA
+  NOVILLO
+}
+
+enum AnimalCondition {
+  BUENO
+  LASTIMADO
+}
+
+model Batch {
+  id          String      @id @default(cuid())
+  batchNumber Int         @unique @default(autoincrement())
+  date        DateTime
+  providerId  String
+  provider    Provider    @relation(fields: [providerId], references: [id])
+  description String?
+  status      BatchStatus @default(OPEN)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  details   BatchDetail[]
+  closure   BatchClosure?
+  slaughter Slaughter?
+  inventory Inventory[]
+  expenses  Expense[]
+}
+
+model BatchDetail {
+  id        String          @id @default(cuid())
+  batchId   String
+  batch     Batch           @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  category  AnimalCategory
+  condition AnimalCondition @default(BUENO)
+  quantity  Int
+  netWeight Float           // Peso neto
+
+  createdAt DateTime @default(now())
+}
+
+model BatchClosure {
+  id                 String   @id @default(cuid())
+  batchId            String   @unique
+  batch              Batch    @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  priceVaca          Float?
+  priceToro          Float?
+  priceVaquilla      Float?
+  priceNovillo       Float?
+  discountApplied    Boolean  @default(true)
+  discountPercentage Float    @default(4.0)
+  totalNetWeight     Float
+  totalDiscountWeight Float
+  totalLiquidWeight  Float
+  totalValue         Float    // Peso liquidado * precios
+
+  createdAt DateTime @default(now())
+}
+
+model Slaughter {
+  id        String   @id @default(cuid())
+  batchId   String   @unique
+  batch     Batch    @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  date      DateTime
+
+  createdAt DateTime @default(now())
+  details   SlaughterDetail[]
+}
+
+model SlaughterDetail {
+  id                String         @id @default(cuid())
+  slaughterId       String
+  slaughter         Slaughter      @relation(fields: [slaughterId], references: [id], onDelete: Cascade)
+  category          AnimalCategory
+  slaughteredWeight Float          // Peso faenado
+  yield             Float?         // Rendimiento %
+  weightDifference  Float?         // Diferencia peso vivo - faenado
+}
+
+// ========================================
+// 5. Inventario y Costos
+// ========================================
+
+model Inventory {
+  id             String         @id @default(cuid())
+  batchId        String
+  batch          Batch          @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  category       AnimalCategory
+  availableStock Float          // kg disponibles
+  costPerKg      Float          // Valor total de categoría / kg faenados
+  totalValue     Float          // availableStock * costPerKg
+
+  updatedAt DateTime @updatedAt
+}
+
+// ========================================
+// 6. Ventas
+// ========================================
+
+enum SaleStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+}
+
+model Sale {
+  id         String     @id @default(cuid())
+  date       DateTime
+  clientId   String
+  client     Client     @relation(fields: [clientId], references: [id])
+  status     SaleStatus @default(PENDING)
+  totalValue Float      @default(0)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  details            SaleDetail[]
+  accountsReceivable AccountReceivable[]
+}
+
+model SaleDetail {
+  id         String   @id @default(cuid())
+  saleId     String
+  sale       Sale     @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  itemId     String
+  item       Item     @relation(fields: [itemId], references: [id])
+  quantityKg Float
+  salePrice  Float
+  totalValue Float
+  costAtSale Float    // Costo del lote en ese momento para calcular margen
+}
+
+// ========================================
+// 7. Finanzas (Bancos, Cuentas, Gastos)
+// ========================================
+
+model Currency {
+  id           String   @id @default(cuid())
+  name         String
+  code         String   @unique // PYG, USD, BRL
+  symbol       String
+  exchangeRate Float    @default(1.0)
+  isDefault    Boolean  @default(false)
+  createdAt    DateTime @default(now())
+
+  bankAccounts BankAccount[]
+}
+
+model BankAccount {
+  id             String   @id @default(cuid())
+  bankName       String
+  accountName    String
+  accountNumber  String
+  currencyId     String
+  currency       Currency @relation(fields: [currencyId], references: [id])
+  initialBalance Float    @default(0)
+  status         Boolean  @default(true)
+  createdAt      DateTime @default(now())
+
+  transactions Transaction[]
+}
+
+enum AccountStatus {
+  PENDING
+  PARTIAL
+  PAID
+}
+
+model AccountReceivable {
+  id         String        @id @default(cuid())
+  saleId     String?
+  sale       Sale?         @relation(fields: [saleId], references: [id])
+  clientId   String
+  client     Client        @relation(fields: [clientId], references: [id])
+  amount     Float
+  paidAmount Float         @default(0)
+  status     AccountStatus @default(PENDING)
+  dueDate    DateTime
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum PayableType {
+  BATCH_PURCHASE
+  EXPENSE
+}
+
+model AccountPayable {
+  id         String        @id @default(cuid())
+  sourceId   String        // Puede ser batchId o expenseId
+  type       PayableType
+  providerId String
+  provider   Provider      @relation(fields: [providerId], references: [id])
+  amount     Float
+  paidAmount Float         @default(0)
+  status     AccountStatus @default(PENDING)
+  dueDate    DateTime
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Expense {
+  id          String   @id @default(cuid())
+  date        DateTime
+  category    String   // Flete, Comisión, Veterinaria...
+  providerId  String
+  provider    Provider @relation(fields: [providerId], references: [id])
+  batchId     String?
+  batch       Batch?   @relation(fields: [batchId], references: [id])
+  description String
+  amount      Float
+  
+  createdAt DateTime @default(now())
+}
+
+enum TransactionType {
+  INCOME
+  EXPENSE
+  TRANSFER
+}
+
+model Transaction {
+  id            String          @id @default(cuid())
+  date          DateTime
+  bankAccountId String
+  bankAccount   BankAccount     @relation(fields: [bankAccountId], references: [id])
+  type          TransactionType
+  amount        Float
+  reference     String?
+  concept       String
+  userId        String
+  user          User            @relation(fields: [userId], references: [id])
+
+  createdAt DateTime @default(now())
+}
