@@ -61,8 +61,10 @@ model Parameter {
 
 model Provider {
   id        String   @id @default(cuid())
+  ruc       String?  @unique
   legalName String
   tradeName String?
+  address   String?
   phone     String?
   email     String?
   contact   String?

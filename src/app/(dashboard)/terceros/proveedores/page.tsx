@@ -35,20 +35,27 @@ export default async function ProveedoresPage() {
           <table className="w-full text-left text-sm">
             <thead className="bg-zinc-950 text-zinc-400">
               <tr>
-                <th className="px-6 py-3 font-medium">Razón Social</th>
+                <th className="px-6 py-3 font-medium">RUC</th>
+                <th className="px-6 py-3 font-medium">Proveedor</th>
                 <th className="px-6 py-3 font-medium">Contacto</th>
-                <th className="px-6 py-3 font-medium">Teléfono</th>
-                <th className="px-6 py-3 font-medium">Email</th>
+                <th className="px-6 py-3 font-medium">Teléfono / Email</th>
                 <th className="px-6 py-3 font-medium text-right">Acciones</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-800 text-zinc-300">
               {proveedores.map((prov) => (
                 <tr key={prov.id} className="hover:bg-zinc-800/50 transition-colors group">
-                  <td className="px-6 py-4 font-medium text-zinc-100">{prov.legalName}</td>
+                  <td className="px-6 py-4 font-mono text-zinc-400">{prov.ruc}</td>
+                  <td className="px-6 py-4">
+                    <div className="font-medium text-zinc-100">{prov.legalName}</div>
+                    {prov.tradeName && <div className="text-xs text-zinc-500">{prov.tradeName}</div>}
+                    {prov.address && <div className="text-xs text-zinc-600 mt-1">{prov.address}</div>}
+                  </td>
                   <td className="px-6 py-4">{prov.contact || "-"}</td>
-                  <td className="px-6 py-4">{prov.phone || "-"}</td>
-                  <td className="px-6 py-4">{prov.email || "-"}</td>
+                  <td className="px-6 py-4">
+                    <div>{prov.phone || "-"}</div>
+                    <div className="text-xs text-zinc-500">{prov.email}</div>
+                  </td>
                   <td className="px-6 py-4 text-right space-x-2">
                     <button className="p-1.5 text-zinc-400 hover:text-cyan-400 rounded-md hover:bg-cyan-400/10 transition-colors">
                       <Edit2 className="w-4 h-4" />

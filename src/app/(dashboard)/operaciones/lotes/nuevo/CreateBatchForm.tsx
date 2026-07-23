@@ -49,7 +49,7 @@ export function CreateBatchForm({ providers }: { providers: any[] }) {
         >
           <option value="">Seleccione un proveedor...</option>
           {providers.map(p => (
-            <option key={p.id} value={p.id}>{p.legalName}</option>
+            <option key={p.id} value={p.id}>{p.legalName} (RUC: {p.ruc})</option>
           ))}
         </select>
       </div>
