@@ -17,9 +17,14 @@ export default async function BatchDetailsPage({ params }: { params: Promise<{ i
       include: {
         provider: true,
         slaughterhouse: true,
-        details: { orderBy: { createdAt: "asc" } },
+        details: { 
+          orderBy: { createdAt: "asc" },
+          include: { item: true }
+        },
         closure: {
-          include: { prices: true }
+          include: { 
+            prices: { include: { item: true } } 
+          }
         },
       },
     });
@@ -30,7 +35,7 @@ export default async function BatchDetailsPage({ params }: { params: Promise<{ i
     const totalWeight = batch.details.reduce((acc, d) => acc + d.netWeight, 0);
     const isOpen = batch.status === "OPEN";
 
-
+    const availableItems = await prisma.item.findMany({ where: { isSlaughterable: true, status: true } });
 
     return (
       <div className="space-y-6">
@@ -95,7 +100,7 @@ export default async function BatchDetailsPage({ params }: { params: Promise<{ i
                     {batch.details.map((d, i) => (
                       <tr key={d.id} className="hover:bg-zinc-800/50">
                         <td className="px-4 py-3">{i + 1}</td>
-                        <td className="px-4 py-3 font-medium">{d.category}</td>
+                        <td className="px-4 py-3 font-medium">{d.item.name}</td>
                         <td className="px-4 py-3">
                           <span className={`px-2 py-0.5 rounded text-xs font-medium ${
                             d.condition === 'GORDO' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 
@@ -112,7 +117,11 @@ export default async function BatchDetailsPage({ params }: { params: Promise<{ i
                         </td>
                         {isOpen && (
                           <td className="px-4 py-3">
-                            <BatchDetailActions detail={d} batchId={batch.id} />
+                            <BatchDetailActions 
+                              detail={d} 
+                              batchId={batch.id} 
+                              items={availableItems} 
+                            />
                           </td>
                         )}
                       </tr>
@@ -180,7 +189,7 @@ export default async function BatchDetailsPage({ params }: { params: Promise<{ i
                       <tbody className="divide-y divide-zinc-800/50">
                         {batch.closure.prices.map(p => (
                           <tr key={p.id}>
-                            <td className="py-2 text-zinc-300">{p.category}</td>
+                            <td className="py-2 text-zinc-300">{p.item.name}</td>
                             <td className="py-2 text-right text-emerald-400/80">{p.liquidWeight.toLocaleString()} KG</td>
                             <td className="py-2 text-right text-zinc-400">₲ {p.pricePerKg.toLocaleString()}</td>
                             <td className="py-2 text-right font-medium text-emerald-400">₲ {p.totalValue.toLocaleString()}</td>
@@ -199,7 +208,10 @@ export default async function BatchDetailsPage({ params }: { params: Promise<{ i
             {isOpen && (
               <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-5">
                 <h2 className="font-semibold text-zinc-100 mb-4">Agregar Pesaje</h2>
-                <RomaneoForm batchId={batch.id} />
+                <RomaneoForm 
+                  batchId={batch.id} 
+                  items={availableItems}
+                />
               </div>
             )}
 

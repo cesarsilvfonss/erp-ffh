@@ -3,7 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 
-import { AnimalCategory, SlaughterCondition } from "@prisma/client";
+import { SlaughterCondition } from "@prisma/client";
 
 export async function initiateFaena(batchId: string) {
   try {
@@ -33,25 +33,25 @@ export async function initiateFaena(batchId: string) {
 
 export async function addFaenaDetail(data: {
   slaughterId: string;
-  category: AnimalCategory;
+  itemId: string;
   condition: SlaughterCondition;
   weight: number;
 }) {
   try {
-    // Get the current max sequence number for this slaughter
+    // Buscar la última para calcular el sequenceNumber
     const lastDetail = await prisma.slaughterDetail.findFirst({
       where: { slaughterId: data.slaughterId },
-      orderBy: { sequenceNumber: 'desc' }
+      orderBy: { sequenceNumber: "desc" }
     });
-    const nextSequenceNumber = (lastDetail?.sequenceNumber || 0) + 1;
+    const nextSeq = lastDetail ? lastDetail.sequenceNumber + 1 : 1;
 
     const detail = await prisma.slaughterDetail.create({
       data: {
         slaughterId: data.slaughterId,
-        category: data.category,
+        itemId: data.itemId,
         condition: data.condition,
         weight: data.weight,
-        sequenceNumber: nextSequenceNumber
+        sequenceNumber: nextSeq
       }
     });
     
@@ -74,19 +74,51 @@ export async function deleteFaenaDetail(id: string, slaughterId: string) {
 
 export async function closeFaena(slaughterId: string, payload: { totalWeight: number, yieldPercent: number }) {
   try {
-    const slaughter = await prisma.slaughter.update({
-      where: { id: slaughterId },
-      data: { 
-        status: "CLOSED",
-        totalWeight: payload.totalWeight,
-        yield: payload.yieldPercent
-      }
-    });
+    await prisma.$transaction(async (tx) => {
+      const slaughter = await tx.slaughter.update({
+        where: { id: slaughterId },
+        data: { 
+          status: "CLOSED",
+          totalWeight: payload.totalWeight,
+          yield: payload.yieldPercent
+        },
+        include: { details: true, batch: true }
+      });
 
-    // Cambiar estado del lote a CLOSED o IN_SALE
-    await prisma.batch.update({
-      where: { id: slaughter.batchId },
-      data: { status: "CLOSED" } // Podría ser IN_INVENTORY, lo dejaremos CLOSED para indicar fin del ciclo de compras.
+      // Agrupar peso al gancho por itemId
+      const weightPerItem = slaughter.details.reduce((acc, d) => {
+        if (!acc[d.itemId]) acc[d.itemId] = 0;
+        acc[d.itemId] += d.weight;
+        return acc;
+      }, {} as Record<string, number>);
+
+      // Para cada artículo, actualizar inventario y registrar movimiento
+      for (const [itemId, totalItemWeight] of Object.entries(weightPerItem)) {
+        // Buscar inventario actual o crearlo
+        const inventory = await tx.inventory.upsert({
+          where: { itemId },
+          update: { currentStock: { increment: totalItemWeight } },
+          create: { itemId, currentStock: totalItemWeight, averageCost: 0 } // Costo se calcula luego si es necesario
+        });
+
+        // Registrar movimiento de Entrada
+        await tx.inventoryMovement.create({
+          data: {
+            itemId,
+            type: "IN",
+            quantity: totalItemWeight,
+            stockAfter: inventory.currentStock, // currentStock ya está actualizado por upsert
+            reference: `Faena Lote #${slaughter.batch.batchNumber}`,
+            description: `Rendimiento de faena al gancho`
+          }
+        });
+      }
+
+      // Cambiar estado del lote a CLOSED (ya estaba cerrado en compras, pero por las dudas)
+      await tx.batch.update({
+        where: { id: slaughter.batchId },
+        data: { status: "CLOSED" } 
+      });
     });
 
     revalidatePath("/operaciones/faena");

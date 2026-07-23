@@ -6,20 +6,26 @@ import { revalidatePath } from "next/cache";
 export async function createClient(data: {
   legalName: string;
   tradeName?: string;
-  contact?: string;
   phone?: string;
   email?: string;
+  contact?: string;
   paymentTermDays?: number;
+  isIvaRetainer?: boolean;
+  isRentRetainer?: boolean;
+  notes?: string;
 }) {
   try {
     const client = await prisma.client.create({
       data: {
         legalName: data.legalName,
         tradeName: data.tradeName,
-        contact: data.contact,
         phone: data.phone,
         email: data.email,
-        paymentTermDays: data.paymentTermDays || 0,
+        contact: data.contact,
+        paymentTermDays: data.paymentTermDays,
+        isIvaRetainer: data.isIvaRetainer || false,
+        isRentRetainer: data.isRentRetainer || false,
+        notes: data.notes,
       },
     });
     

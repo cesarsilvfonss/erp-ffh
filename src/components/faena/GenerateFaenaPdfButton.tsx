@@ -73,24 +73,25 @@ export function GenerateFaenaPdfButton({
     // Detalle de Medias Reses (Agrupadas por Categoría)
     let finalY = (doc as any).lastAutoTable.finalY + 15;
     
-    // Grouping by category to show yields per category
+    // Grouping by item to show yields per item
     const catStats = slaughter.details.reduce((acc: any, d: any) => {
-      if (!acc[d.category]) acc[d.category] = { medias: 0, weight: 0 };
-      acc[d.category].medias += 1;
-      acc[d.category].weight += d.weight;
+      const itemName = d.item.name;
+      if (!acc[itemName]) acc[itemName] = { medias: 0, weight: 0 };
+      acc[itemName].medias += 1;
+      acc[itemName].weight += d.weight;
       return acc;
     }, {});
 
-    const catBody = Object.keys(catStats).map(cat => {
+    const catBody = Object.keys(catStats).map(itemName => {
       // Find bought weight for this category
-      const bWeight = batch.details.filter((bd: any) => bd.category === cat).reduce((acc: any, bd: any) => acc + bd.netWeight, 0);
-      const yieldP = bWeight > 0 ? (catStats[cat].weight / bWeight) * 100 : 0;
+      const bWeight = batch.details.filter((bd: any) => bd.item.name === itemName).reduce((acc: any, bd: any) => acc + bd.netWeight, 0);
+      const yieldP = bWeight > 0 ? (catStats[itemName].weight / bWeight) * 100 : 0;
 
       return [
-        cat,
-        `${catStats[cat].medias}`,
-        `${(catStats[cat].medias * 0.5)}`,
-        `${catStats[cat].weight.toLocaleString()} KG`,
+        itemName,
+        `${catStats[itemName].medias}`,
+        `${(catStats[itemName].medias * 0.5)}`,
+        `${catStats[itemName].weight.toLocaleString()} KG`,
         `${bWeight.toLocaleString()} KG`,
         `${yieldP.toFixed(2)} %`
       ];

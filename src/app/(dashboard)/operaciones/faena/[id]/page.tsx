@@ -4,7 +4,6 @@ import Link from "next/link";
 import { ArrowLeft, CheckCircle2 } from "lucide-react";
 import { FaenaForm } from "./FaenaForm";
 import { CloseFaenaButton } from "@/components/faena/CloseFaenaButton";
-import { AnimalCategory } from "@prisma/client";
 
 import { GenerateFaenaPdfButton } from "@/components/faena/GenerateFaenaPdfButton";
 
@@ -19,11 +18,14 @@ export default async function FaenaDetailsPage({ params }: { params: Promise<{ i
       batch: {
         include: {
           provider: true,
-          details: true
+          details: {
+            include: { item: true }
+          }
         }
       },
       details: {
-        orderBy: { createdAt: "desc" }
+        orderBy: { createdAt: "desc" },
+        include: { item: true }
       }
     }
   });
@@ -36,27 +38,28 @@ export default async function FaenaDetailsPage({ params }: { params: Promise<{ i
   const totalBoughtHeads = slaughter.batch.details.reduce((acc, d) => acc + d.quantity, 0);
   const totalBoughtWeight = slaughter.batch.details.reduce((acc, d) => acc + d.netWeight, 0);
 
-  // Agrupar por categoría en la compra
+  // Agrupar por artículo en la compra
   const boughtStats = slaughter.batch.details.reduce((acc, d) => {
-    if (!acc[d.category]) acc[d.category] = { heads: 0, weight: 0 };
-    acc[d.category].heads += d.quantity;
-    acc[d.category].weight += d.netWeight;
+    if (!acc[d.item.name]) acc[d.item.name] = { heads: 0, weight: 0 };
+    acc[d.item.name].heads += d.quantity;
+    acc[d.item.name].weight += d.netWeight;
     return acc;
   }, {} as Record<string, { heads: number, weight: number }>);
 
-  // Agrupar por categoría en faena (cada línea = 0.5 cabeza)
+  // Agrupar por artículo en faena (cada línea = 0.5 cabeza)
   const faenaStats = slaughter.details.reduce((acc, d) => {
-    if (!acc[d.category]) acc[d.category] = { heads: 0, weight: 0 };
-    acc[d.category].heads += 0.5; // Media res
-    acc[d.category].weight += d.weight;
+    if (!acc[d.item.name]) acc[d.item.name] = { heads: 0, weight: 0 };
+    acc[d.item.name].heads += 0.5; // Media res
+    acc[d.item.name].weight += d.weight;
     return acc;
   }, {} as Record<string, { heads: number, weight: number }>);
 
   const totalFaenaHeads = slaughter.details.length * 0.5;
   const totalFaenaWeight = slaughter.details.reduce((acc, d) => acc + d.weight, 0);
 
-  // Categorías presentes en la compra (para pasarlas al form)
-  const availableCategories = Object.keys(boughtStats) as AnimalCategory[];
+  // Artículos presentes en la compra (para pasarlos al form)
+  // Obtenemos los items únicos de los detalles del lote
+  const availableItems = slaughter.batch.details.map(d => d.item).filter((v,i,a)=>a.findIndex(t=>(t.id === v.id))===i);
 
   return (
     <div className="space-y-6">
@@ -121,18 +124,18 @@ export default async function FaenaDetailsPage({ params }: { params: Promise<{ i
 
               <div className="space-y-4">
                 <h3 className="text-xs font-medium uppercase text-zinc-500">Desglose por Categoría</h3>
-                {availableCategories.map(cat => {
-                  const bHeads = boughtStats[cat]?.heads || 0;
-                  const fHeads = faenaStats[cat]?.heads || 0;
-                  const fWeight = faenaStats[cat]?.weight || 0;
-                  const bWeight = boughtStats[cat]?.weight || 0;
+                {Object.keys(boughtStats).map(itemName => {
+                  const bHeads = boughtStats[itemName]?.heads || 0;
+                  const fHeads = faenaStats[itemName]?.heads || 0;
+                  const fWeight = faenaStats[itemName]?.weight || 0;
+                  const bWeight = boughtStats[itemName]?.weight || 0;
                   const progress = (fHeads / bHeads) * 100 || 0;
                   const yieldPercent = bWeight > 0 ? (fWeight / bWeight) * 100 : 0;
 
                   return (
-                    <div key={cat} className="bg-zinc-950 border border-zinc-800/50 rounded-lg p-3">
+                    <div key={itemName} className="bg-zinc-950 border border-zinc-800/50 rounded-lg p-3">
                       <div className="flex justify-between items-center mb-1">
-                        <span className="font-medium text-zinc-300">{cat}</span>
+                        <span className="font-medium text-zinc-300">{itemName}</span>
                         <span className="text-sm text-zinc-100">{fHeads} / {bHeads} cbz</span>
                       </div>
                       <div className="w-full bg-zinc-800 rounded-full h-1.5 mb-2">
@@ -159,7 +162,7 @@ export default async function FaenaDetailsPage({ params }: { params: Promise<{ i
           {isOpen && (
             <FaenaForm 
               slaughterId={slaughter.id} 
-              availableCategories={availableCategories} 
+              availableItems={availableItems} 
             />
           )}
 
@@ -185,7 +188,7 @@ export default async function FaenaDetailsPage({ params }: { params: Promise<{ i
                   {slaughter.details.map((d) => (
                     <tr key={d.id} className="hover:bg-zinc-800/50">
                       <td className="px-4 py-2 text-zinc-500 font-mono text-xs">{d.sequenceNumber}</td>
-                      <td className="px-4 py-2 font-medium">{d.category}</td>
+                      <td className="px-4 py-2 font-medium">{d.item.name}</td>
                       <td className="px-4 py-2">
                         <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${
                           d.condition === 'CON_COBERTURA' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 
@@ -217,7 +220,7 @@ export default async function FaenaDetailsPage({ params }: { params: Promise<{ i
                   ))}
                   {slaughter.details.length === 0 && (
                     <tr>
-                      <td colSpan={5} className="px-4 py-8 text-center text-zinc-500">
+                      <td colSpan={6} className="px-4 py-8 text-center text-zinc-500">
                         No hay medias reses registradas. Usa el formulario de arriba para comenzar.
                       </td>
                     </tr>

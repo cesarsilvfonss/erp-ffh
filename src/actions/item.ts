@@ -9,6 +9,7 @@ export async function createItem(data: {
   category: string;
   unit: string;
   description?: string;
+  isSlaughterable?: boolean;
 }) {
   try {
     const item = await prisma.item.create({
@@ -18,6 +19,7 @@ export async function createItem(data: {
         category: data.category,
         unit: data.unit,
         description: data.description,
+        isSlaughterable: data.isSlaughterable || false,
       },
     });
     

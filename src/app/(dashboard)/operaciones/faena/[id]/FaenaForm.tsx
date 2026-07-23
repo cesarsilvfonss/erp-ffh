@@ -2,17 +2,17 @@
 
 import { useState, useRef, useEffect } from "react";
 import { addFaenaDetail } from "@/actions/faena";
-import { AnimalCategory, SlaughterCondition } from "@prisma/client";
+import { SlaughterCondition, Item } from "@prisma/client";
 import { Save } from "lucide-react";
 
 export function FaenaForm({ 
   slaughterId, 
-  availableCategories 
+  availableItems 
 }: { 
   slaughterId: string;
-  availableCategories: AnimalCategory[];
+  availableItems: Item[];
 }) {
-  const [category, setCategory] = useState<AnimalCategory>(availableCategories[0] || "VACA");
+  const [itemId, setItemId] = useState<string>(availableItems[0]?.id || "");
   const [condition, setCondition] = useState<SlaughterCondition>("CON_COBERTURA");
   const [weight, setWeight] = useState("");
   const [loading, setLoading] = useState(false);
@@ -26,18 +26,18 @@ export function FaenaForm({
 
   async function handleSubmit(e?: React.FormEvent) {
     if (e) e.preventDefault();
-    if (!weight || isNaN(parseFloat(weight))) return;
+    if (!weight || isNaN(parseFloat(weight)) || !itemId) return;
 
     setLoading(true);
     const res = await addFaenaDetail({
       slaughterId,
-      category,
+      itemId,
       condition,
       weight: parseFloat(weight)
     });
 
     if (res.success) {
-      // Limpiamos SOLO el peso. Mantenemos categoría y condición para velocidad.
+      // Limpiamos SOLO el peso. Mantenemos artículo y condición para velocidad.
       setWeight("");
     } else {
       alert("Error: " + res.error);
@@ -62,13 +62,13 @@ export function FaenaForm({
         <div className="w-full md:w-1/3">
           <label className="block text-xs font-medium text-zinc-400 mb-1">Categoría</label>
           <select 
-            value={category}
-            onChange={(e) => setCategory(e.target.value as AnimalCategory)}
+            value={itemId}
+            onChange={(e) => setItemId(e.target.value)}
             disabled={loading}
+            required
             className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2.5 text-sm text-zinc-100 focus:outline-none focus:border-emerald-500/50"
           >
-            {availableCategories.map(c => <option key={c} value={c}>{c}</option>)}
-            {availableCategories.length === 0 && <option value="VACA">VACA</option>}
+            {availableItems.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}
           </select>
         </div>
 
@@ -104,7 +104,7 @@ export function FaenaForm({
 
         <button
           type="submit"
-          disabled={loading || !weight}
+          disabled={loading || !weight || !itemId}
           className="flex w-full md:w-auto justify-center bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-zinc-950 px-6 py-2.5 rounded-lg font-bold transition-all items-center gap-2 h-[46px]"
         >
           <Save className="w-5 h-5 md:w-4 md:h-4" />

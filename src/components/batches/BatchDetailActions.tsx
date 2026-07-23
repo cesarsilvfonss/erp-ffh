@@ -3,14 +3,16 @@
 import { useState } from "react";
 import { Trash2, Edit2, X } from "lucide-react";
 import { deleteBatchDetail, updateBatchDetail } from "@/actions/batch";
-import { AnimalCategory, AnimalCondition } from "@prisma/client";
+import { AnimalCondition, Item } from "@prisma/client";
 
 export function BatchDetailActions({ 
   detail, 
-  batchId 
+  batchId,
+  items
 }: { 
   detail: any; 
   batchId: string;
+  items: Item[];
 }) {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -31,7 +33,7 @@ export function BatchDetailActions({
     const data = {
       id: detail.id,
       batchId,
-      category: formData.get("category") as AnimalCategory,
+      itemId: formData.get("itemId") as string,
       condition: formData.get("condition") as AnimalCondition,
       quantity: parseInt(formData.get("quantity") as string),
       netWeight: parseFloat(formData.get("netWeight") as string),
@@ -83,17 +85,16 @@ export function BatchDetailActions({
               <form onSubmit={handleEditSubmit} className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-medium text-zinc-400 mb-1">Categoría</label>
+                    <label className="block text-xs font-medium text-zinc-400 mb-1">Artículo (Categoría)</label>
                     <select 
-                      name="category"
-                      defaultValue={detail.category}
+                      name="itemId"
+                      defaultValue={detail.itemId}
                       required
                       className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:border-emerald-500/50"
                     >
-                      <option value="VACA">Vaca</option>
-                      <option value="TORO">Toro</option>
-                      <option value="NOVILLO">Novillo</option>
-                      <option value="VAQUILLA">Vaquilla</option>
+                      {items.map(item => (
+                        <option key={item.id} value={item.id}>{item.name}</option>
+                      ))}
                     </select>
                   </div>
                   <div>

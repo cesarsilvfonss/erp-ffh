@@ -2,9 +2,9 @@
 
 import { useState } from "react";
 import { addBatchDetail } from "@/actions/batch";
-import { AnimalCategory, AnimalCondition } from "@prisma/client";
+import { AnimalCondition, Item } from "@prisma/client";
 
-export function RomaneoForm({ batchId }: { batchId: string }) {
+export function RomaneoForm({ batchId, items }: { batchId: string, items: Item[] }) {
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -14,7 +14,7 @@ export function RomaneoForm({ batchId }: { batchId: string }) {
     const formData = new FormData(e.currentTarget);
     const data = {
       batchId,
-      category: formData.get("category") as AnimalCategory,
+      itemId: formData.get("itemId") as string,
       condition: formData.get("condition") as AnimalCondition,
       quantity: parseInt(formData.get("quantity") as string),
       netWeight: parseFloat(formData.get("netWeight") as string),
@@ -34,16 +34,16 @@ export function RomaneoForm({ batchId }: { batchId: string }) {
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <label className="block text-xs font-medium text-zinc-400 mb-1">Categoría</label>
+          <label className="block text-xs font-medium text-zinc-400 mb-1">Artículo (Categoría)</label>
           <select 
-            name="category"
+            name="itemId"
             required
             className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:border-emerald-500/50"
           >
-            <option value="VACA">Vaca</option>
-            <option value="TORO">Toro</option>
-            <option value="NOVILLO">Novillo</option>
-            <option value="VAQUILLA">Vaquilla</option>
+            <option value="">Seleccionar...</option>
+            {items.map(item => (
+              <option key={item.id} value={item.id}>{item.name}</option>
+            ))}
           </select>
         </div>
         <div>

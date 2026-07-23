@@ -35,11 +35,11 @@ model AuditLog {
   id        String   @id @default(cuid())
   userId    String
   user      User     @relation(fields: [userId], references: [id])
-  action    String   // CREATE, UPDATE, DELETE
-  entity    String   // Table name
-  entityId  String   // Record ID
-  oldValue  String?  // JSON stringified
-  newValue  String?  // JSON stringified
+  action    String // CREATE, UPDATE, DELETE
+  entity    String // Table name
+  entityId  String // Record ID
+  oldValue  String? // JSON stringified
+  newValue  String? // JSON stringified
   createdAt DateTime @default(now())
 }
 
@@ -50,7 +50,7 @@ model AuditLog {
 model Parameter {
   id          String   @id @default(cuid())
   key         String   @unique
-  value       String   // Stringified value
+  value       String // Stringified value
   description String?
   updatedAt   DateTime @updatedAt
 }
@@ -60,13 +60,13 @@ model Parameter {
 // ========================================
 
 model Provider {
-  id        String   @id @default(cuid())
-  ruc       String?  @unique
-  legalName String
-  tradeName String?
-  address   String?
-  phone     String?
-  email     String?
+  id               String   @id @default(cuid())
+  ruc              String?  @unique
+  legalName        String
+  tradeName        String?
+  address          String?
+  phone            String?
+  email            String?
   contact          String?
   notes            String?
   isSlaughterhouse Boolean  @default(false)
@@ -74,9 +74,9 @@ model Provider {
   updatedAt        DateTime @updatedAt
 
   batches                 Batch[]
-  batchesAsSlaughterhouse Batch[] @relation("BatchSlaughterhouse")
-  expenses        Expense[]
-  accountsPayable AccountPayable[]
+  batchesAsSlaughterhouse Batch[]          @relation("BatchSlaughterhouse")
+  expenses                Expense[]
+  accountsPayable         AccountPayable[]
 }
 
 model Client {
@@ -87,6 +87,8 @@ model Client {
   email           String?
   contact         String?
   paymentTermDays Int      @default(0)
+  isIvaRetainer   Boolean  @default(false)
+  isRentRetainer  Boolean  @default(false)
   notes           String?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
@@ -96,17 +98,23 @@ model Client {
 }
 
 model Item {
-  id          String   @id @default(cuid())
-  code        String   @unique
-  name        String
-  category    String   // Carne, Menudencia, etc.
-  unit        String   // KG, UN
-  description String?
-  status      Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id              String   @id @default(cuid())
+  code            String   @unique
+  name            String
+  category        String // Carne, Menudencia, etc.
+  unit            String // KG, UN
+  description     String?
+  status          Boolean  @default(true)
+  isSlaughterable Boolean  @default(false) // Nuevo: Si es faenable (Ej: Vaca, Toro)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
-  saleDetails SaleDetail[]
+  saleDetails        SaleDetail[]
+  batchDetails       BatchDetail[]
+  closurePrices      BatchClosurePrice[]
+  slaughterDetails   SlaughterDetail[]
+  inventory          Inventory?
+  inventoryMovements InventoryMovement[]
 }
 
 // ========================================
@@ -114,19 +122,14 @@ model Item {
 // ========================================
 
 enum BatchStatus {
-  OPEN         // Abierto
+  OPEN // Abierto
   IN_SLAUGHTER // En faena
-  IN_SALE      // En venta
-  SOLD         // Vendido
-  CLOSED       // Cerrado
+  IN_SALE // En venta
+  SOLD // Vendido
+  CLOSED // Cerrado
 }
 
-enum AnimalCategory {
-  VACA
-  TORO
-  VAQUILLA
-  NOVILLO
-}
+// AnimalCategory enum removed in favor of dynamic Items
 
 enum AnimalCondition {
   GORDO
@@ -137,11 +140,11 @@ enum AnimalCondition {
 }
 
 model Batch {
-  id          String      @id @default(cuid())
-  batchNumber Int         @unique @default(autoincrement())
-  date        DateTime
-  providerId  String
-  provider    Provider    @relation(fields: [providerId], references: [id])
+  id               String      @id @default(cuid())
+  batchNumber      Int         @unique @default(autoincrement())
+  date             DateTime
+  providerId       String
+  provider         Provider    @relation(fields: [providerId], references: [id])
   description      String?
   status           BatchStatus @default(OPEN)
   slaughterhouseId String?
@@ -152,7 +155,6 @@ model Batch {
   details   BatchDetail[]
   closure   BatchClosure?
   slaughter Slaughter?
-  inventory Inventory[]
   expenses  Expense[]
 }
 
@@ -160,45 +162,47 @@ model BatchDetail {
   id        String          @id @default(cuid())
   batchId   String
   batch     Batch           @relation(fields: [batchId], references: [id], onDelete: Cascade)
-  category  AnimalCategory
+  itemId    String
+  item      Item            @relation(fields: [itemId], references: [id])
   condition AnimalCondition @default(GORDO)
   quantity  Int
-  netWeight Float           // Peso neto
+  netWeight Float // Peso neto
 
   createdAt DateTime @default(now())
 }
 
 model BatchClosure {
-  id                 String   @id @default(cuid())
-  batchId            String   @unique
-  batch              Batch    @relation(fields: [batchId], references: [id], onDelete: Cascade)
-  
+  id      String @id @default(cuid())
+  batchId String @unique
+  batch   Batch  @relation(fields: [batchId], references: [id], onDelete: Cascade)
+
   // Resumen de pesos
-  totalNetWeight      Float    // Peso bruto total
-  discountApplied     Boolean  @default(true)
-  discountPercentage  Float    @default(4.0)
+  totalNetWeight      Float // Peso bruto total
+  discountApplied     Boolean @default(true)
+  discountPercentage  Float   @default(4.0)
   totalDiscountWeight Float
   totalLiquidWeight   Float
-  
+
   // Valor financiero
-  totalValue          Float    // Suma de (kilos líquidos * precio)
-  
-  prices              BatchClosurePrice[]
-  
+  totalValue Float // Suma de (kilos líquidos * precio)
+
+  prices BatchClosurePrice[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
 model BatchClosurePrice {
-  id           String         @id @default(cuid())
+  id           String       @id @default(cuid())
   closureId    String
-  closure      BatchClosure   @relation(fields: [closureId], references: [id], onDelete: Cascade)
-  category     AnimalCategory
+  closure      BatchClosure @relation(fields: [closureId], references: [id], onDelete: Cascade)
+  itemId       String
+  item         Item         @relation(fields: [itemId], references: [id])
   liquidWeight Float
   pricePerKg   Float
   totalValue   Float
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
 }
 
 enum SlaughterStatus {
@@ -214,31 +218,33 @@ enum SlaughterCondition {
 }
 
 model Slaughter {
-  id           String          @id @default(cuid())
-  batchId      String          @unique
-  batch        Batch           @relation(fields: [batchId], references: [id], onDelete: Cascade)
-  date         DateTime
-  status       SlaughterStatus @default(OPEN)
-  
-  // Cierre data
-  totalWeight  Float?
-  yield        Float?
+  id      String          @id @default(cuid())
+  batchId String          @unique
+  batch   Batch           @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  date    DateTime
+  status  SlaughterStatus @default(OPEN)
 
-  createdAt    DateTime @default(now())
-  details      SlaughterDetail[]
+  // Cierre data
+  totalWeight Float?
+  yield       Float?
+
+  createdAt DateTime          @default(now())
+  details   SlaughterDetail[]
 }
 
 model SlaughterDetail {
-  id                String             @id @default(cuid())
-  slaughterId       String
-  slaughter         Slaughter          @relation(fields: [slaughterId], references: [id], onDelete: Cascade)
-  sequenceNumber    Int                @default(0) // Secuencial 1, 2, 3...
-  category          AnimalCategory
-  condition         SlaughterCondition
-  weight            Float              // Peso de una media res (0.5 cabeza)
-  
+  id             String             @id @default(cuid())
+  slaughterId    String
+  slaughter      Slaughter          @relation(fields: [slaughterId], references: [id], onDelete: Cascade)
+  sequenceNumber Int                @default(0) // Secuencial 1, 2, 3...
+  itemId         String
+  item           Item               @relation(fields: [itemId], references: [id])
+  condition      SlaughterCondition
+  weight         Float // Peso de una media res (0.5 cabeza)
+
   createdAt DateTime @default(now())
 }
+
 // Reemplazado arriba
 
 // ========================================
@@ -246,15 +252,32 @@ model SlaughterDetail {
 // ========================================
 
 model Inventory {
-  id             String         @id @default(cuid())
-  batchId        String
-  batch          Batch          @relation(fields: [batchId], references: [id], onDelete: Cascade)
-  category       AnimalCategory
-  availableStock Float          // kg disponibles
-  costPerKg      Float          // Valor total de categoría / kg faenados
-  totalValue     Float          // availableStock * costPerKg
+  id           String   @id @default(cuid())
+  itemId       String   @unique
+  item         Item     @relation(fields: [itemId], references: [id])
+  currentStock Float    @default(0) // KG disponibles
+  averageCost  Float    @default(0) // Costo promedio ponderado (opcional)
+  updatedAt    DateTime @updatedAt
+}
 
-  updatedAt DateTime @updatedAt
+enum MovementType {
+  IN
+  OUT
+  ADJUSTMENT
+}
+
+model InventoryMovement {
+  id          String       @id @default(cuid())
+  itemId      String
+  item        Item         @relation(fields: [itemId], references: [id])
+  type        MovementType
+  quantity    Float // Cantidad movida (siempre positiva)
+  stockAfter  Float // Stock resultante tras el movimiento
+  date        DateTime     @default(now())
+  reference   String? // Ej: "Faena #12", "Venta #001-001-0000001"
+  description String?
+
+  createdAt DateTime @default(now())
 }
 
 // ========================================
@@ -270,12 +293,15 @@ enum SaleStatus {
 model Sale {
   id            String     @id @default(cuid())
   date          DateTime
-  invoiceNumber String?    // Formato 001-001-0000001
+  invoiceNumber String? // Formato 001-001-0000001
   clientId      String
   client        Client     @relation(fields: [clientId], references: [id])
   status        SaleStatus @default(PENDING)
   totalValue    Float      @default(0)
-  
+  ivaRetention  Float      @default(0)
+  rentRetention Float      @default(0)
+  netValue      Float      @default(0)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -284,15 +310,15 @@ model Sale {
 }
 
 model SaleDetail {
-  id         String   @id @default(cuid())
+  id         String @id @default(cuid())
   saleId     String
-  sale       Sale     @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  sale       Sale   @relation(fields: [saleId], references: [id], onDelete: Cascade)
   itemId     String
-  item       Item     @relation(fields: [itemId], references: [id])
+  item       Item   @relation(fields: [itemId], references: [id])
   quantityKg Float
   salePrice  Float
   totalValue Float
-  costAtSale Float    // Costo del lote en ese momento para calcular margen
+  costAtSale Float // Costo del lote en ese momento para calcular margen
 }
 
 // ========================================
@@ -353,7 +379,7 @@ enum PayableType {
 
 model AccountPayable {
   id         String        @id @default(cuid())
-  sourceId   String        // Puede ser batchId o expenseId
+  sourceId   String // Puede ser batchId o expenseId
   type       PayableType
   providerId String
   provider   Provider      @relation(fields: [providerId], references: [id])
@@ -367,13 +393,13 @@ model AccountPayable {
 }
 
 model ExpenseCategory {
-  id          String    @id @default(cuid())
-  name        String    @unique
+  id          String   @id @default(cuid())
+  name        String   @unique
   description String?
-  isActive    Boolean   @default(true)
-  createdAt   DateTime  @default(now())
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
 
-  expenses    Expense[]
+  expenses Expense[]
 }
 
 model Expense {
@@ -387,7 +413,7 @@ model Expense {
   batch       Batch?          @relation(fields: [batchId], references: [id])
   description String
   amount      Float
-  
+
   createdAt DateTime @default(now())
 }
 

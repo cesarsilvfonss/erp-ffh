@@ -19,6 +19,7 @@ export function CreateItemModal() {
       category: formData.get("category") as string,
       unit: formData.get("unit") as string,
       description: formData.get("description") as string,
+      isSlaughterable: formData.get("isSlaughterable") === "on",
     };
 
     const res = await createItem(data);
@@ -118,6 +119,18 @@ export function CreateItemModal() {
                   rows={2}
                   className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-4 py-2 text-sm text-zinc-100 focus:outline-none focus:border-emerald-500/50 resize-none"
                 />
+              </div>
+
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="isSlaughterable"
+                  name="isSlaughterable"
+                  className="w-4 h-4 rounded border-zinc-700 bg-zinc-900 text-emerald-500 focus:ring-emerald-500 focus:ring-offset-zinc-950"
+                />
+                <label htmlFor="isSlaughterable" className="text-sm text-zinc-300">
+                  Es Faenable (Ej: Vaca, Toro, Novillo)
+                </label>
               </div>
 
               <div className="pt-4">
