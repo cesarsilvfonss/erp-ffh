@@ -19,7 +19,7 @@ export async function registerSlaughter(data: {
         where: { id: data.batchId },
         include: { 
           details: true, 
-          closure: true,
+          closure: { include: { prices: true } },
           slaughter: true 
         },
       });
@@ -73,17 +73,10 @@ export async function registerSlaughter(data: {
         });
 
         // 4. Calcular Costo para Inventario
-        // Valor total pagado por esta categoría = (Peso Neto * (1 - Merma)) * Precio
-        const liquidWeight = liveWeight * (1 - (mermaPercent / 100));
-        let price = 0;
-        switch(d.category) {
-          case "VACA": price = batch.closure.priceVaca || 0; break;
-          case "TORO": price = batch.closure.priceToro || 0; break;
-          case "VAQUILLA": price = batch.closure.priceVaquilla || 0; break;
-          case "NOVILLO": price = batch.closure.priceNovillo || 0; break;
-        }
-
-        const totalCategoryCost = liquidWeight * price;
+        // El costo total de la categoría es la suma de los valores de sus segmentos liquidados
+        const totalCategoryCost = batch.closure.prices
+          .filter(p => p.category === d.category)
+          .reduce((acc, p) => acc + p.totalValue, 0);
         // Costo exacto por Kilo Faenado
         const costPerKg = totalCategoryCost / d.slaughteredWeight;
 
