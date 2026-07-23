@@ -167,7 +167,7 @@ export function GeneratePdfButton({ batch }: { batch: any }) {
       // --- 3. LIQUIDACION ---
       doc.setFontSize(11);
       doc.setFont("helvetica", "bold");
-      doc.textColor = 0;
+      doc.setTextColor(0);
       doc.text("3. Liquidación Monetaria por Categorías", 14, currentY);
 
       const liquidacionData = batch.closure.prices.map((p: any) => [
