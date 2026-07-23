@@ -248,12 +248,13 @@ enum SaleStatus {
 }
 
 model Sale {
-  id         String     @id @default(cuid())
-  date       DateTime
-  clientId   String
-  client     Client     @relation(fields: [clientId], references: [id])
-  status     SaleStatus @default(PENDING)
-  totalValue Float      @default(0)
+  id            String     @id @default(cuid())
+  date          DateTime
+  invoiceNumber String?    // Formato 001-001-0000001
+  clientId      String
+  client        Client     @relation(fields: [clientId], references: [id])
+  status        SaleStatus @default(PENDING)
+  totalValue    Float      @default(0)
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -345,14 +346,25 @@ model AccountPayable {
   updatedAt DateTime @updatedAt
 }
 
+model ExpenseCategory {
+  id          String    @id @default(cuid())
+  name        String    @unique
+  description String?
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+
+  expenses    Expense[]
+}
+
 model Expense {
-  id          String   @id @default(cuid())
+  id          String          @id @default(cuid())
   date        DateTime
-  category    String   // Flete, Comisión, Veterinaria...
+  categoryId  String
+  category    ExpenseCategory @relation(fields: [categoryId], references: [id])
   providerId  String
-  provider    Provider @relation(fields: [providerId], references: [id])
+  provider    Provider        @relation(fields: [providerId], references: [id])
   batchId     String?
-  batch       Batch?   @relation(fields: [batchId], references: [id])
+  batch       Batch?          @relation(fields: [batchId], references: [id])
   description String
   amount      Float
   

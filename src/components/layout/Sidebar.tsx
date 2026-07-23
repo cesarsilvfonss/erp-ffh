@@ -21,12 +21,14 @@ const menuItems = [
   { icon: LayoutDashboard, label: "Dashboard", href: "/" },
   { icon: Store, label: "Compras (Lotes)", href: "/operaciones/lotes" },
   { icon: Factory, label: "Faena", href: "/operaciones/faena" },
+  { icon: CircleDollarSign, label: "Ventas", href: "/operaciones/ventas" },
   { icon: Beef, label: "Inventario", href: "/inventario" },
-  { icon: CircleDollarSign, label: "Ventas", href: "/ventas" },
   { icon: ArrowRightLeft, label: "Finanzas", href: "/finanzas" },
   { icon: Wallet, label: "Cuentas por Cobrar/Pagar", href: "/cuentas" },
-  { icon: Users, label: "Terceros (Proveedores)", href: "/terceros/proveedores" },
-  { icon: Settings, label: "Configuración", href: "/configuracion" },
+  { icon: Users, label: "Clientes", href: "/terceros/clientes" },
+  { icon: Users, label: "Proveedores", href: "/terceros/proveedores" },
+  { icon: Settings, label: "Configuración (Gastos)", href: "/configuracion/gastos" },
+  { icon: Settings, label: "Catálogo Artículos", href: "/configuracion/articulos" },
 ];
 
 export function Sidebar() {
