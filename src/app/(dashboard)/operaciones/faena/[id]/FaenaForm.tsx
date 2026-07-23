@@ -105,13 +105,14 @@ export function FaenaForm({
         <button
           type="submit"
           disabled={loading || !weight}
-          className="hidden md:flex bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-zinc-950 px-4 py-2.5 rounded-lg font-bold transition-all items-center gap-2 h-[46px]"
+          className="flex w-full md:w-auto justify-center bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-zinc-950 px-6 py-2.5 rounded-lg font-bold transition-all items-center gap-2 h-[46px]"
         >
-          <Save className="w-4 h-4" />
+          <Save className="w-5 h-5 md:w-4 md:h-4" />
+          <span className="md:hidden">Insertar Peso</span>
         </button>
       </form>
-      <p className="text-[10px] text-zinc-500 mt-2 italic">
-        Tip: Escribe el peso y presiona "Enter" para guardar e insertar el siguiente rápidamente sin tocar el mouse.
+      <p className="text-[10px] text-zinc-500 mt-3 italic">
+        Tip (PC): Escribe el peso y presiona "Enter" para guardar e insertar el siguiente rápidamente.
       </p>
     </div>
   );
