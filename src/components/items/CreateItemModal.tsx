@@ -14,7 +14,6 @@ export function CreateItemModal() {
 
     const formData = new FormData(e.currentTarget);
     const data = {
-      code: formData.get("code") as string,
       name: formData.get("name") as string,
       category: formData.get("category") as string,
       unit: formData.get("unit") as string,
@@ -57,16 +56,7 @@ export function CreateItemModal() {
             </div>
             
             <form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
-              <div>
-                <label className="block text-sm font-medium text-zinc-400 mb-1">Código *</label>
-                <input 
-                  type="text" 
-                  name="code"
-                  required
-                  placeholder="Ej: CAR-001"
-                  className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-4 py-2 text-sm text-zinc-100 focus:outline-none focus:border-emerald-500/50"
-                />
-              </div>
+
 
               <div>
                 <label className="block text-sm font-medium text-zinc-400 mb-1">Nombre *</label>

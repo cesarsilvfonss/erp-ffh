@@ -4,7 +4,6 @@ import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 
 export async function createItem(data: {
-  code: string;
   name: string;
   category: string;
   unit: string;
@@ -12,9 +11,25 @@ export async function createItem(data: {
   isSlaughterable?: boolean;
 }) {
   try {
+    // Generate sequential code: ART-0001
+    const lastItem = await prisma.item.findFirst({
+      orderBy: { code: 'desc' },
+      where: { code: { startsWith: 'ART-' } }
+    });
+
+    let nextNumber = 1;
+    if (lastItem && lastItem.code) {
+      const parts = lastItem.code.split('-');
+      if (parts.length === 2 && !isNaN(Number(parts[1]))) {
+        nextNumber = parseInt(parts[1], 10) + 1;
+      }
+    }
+    
+    const newCode = `ART-${nextNumber.toString().padStart(4, '0')}`;
+
     const item = await prisma.item.create({
       data: {
-        code: data.code,
+        code: newCode,
         name: data.name,
         category: data.category,
         unit: data.unit,
