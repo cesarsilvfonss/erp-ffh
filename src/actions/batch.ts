@@ -77,6 +77,33 @@ export async function deleteBatchDetail(id: string, batchId: string) {
   }
 }
 
+export async function updateBatchDetail(data: {
+  id: string;
+  batchId: string;
+  category: AnimalCategory;
+  condition: AnimalCondition;
+  quantity: number;
+  netWeight: number;
+}) {
+  try {
+    const detail = await prisma.batchDetail.update({
+      where: { id: data.id },
+      data: {
+        category: data.category,
+        condition: data.condition,
+        quantity: data.quantity,
+        netWeight: data.netWeight,
+      },
+    });
+    
+    revalidatePath(`/operaciones/lotes/${data.batchId}`);
+    return { success: true, data: detail };
+  } catch (error: any) {
+    console.error("Error updating batch detail:", error);
+    return { success: false, error: error.message };
+  }
+}
+
 export async function closeBatch(data: {
   batchId: string;
   discountPercentage: number;

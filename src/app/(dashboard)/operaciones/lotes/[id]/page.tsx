@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ArrowLeft, CheckCircle2 } from "lucide-react";
 import { RomaneoForm } from "./RomaneoForm";
 import { CloseBatchButton } from "@/components/batches/CloseBatchButton";
+import { BatchDetailActions } from "@/components/batches/BatchDetailActions";
 
 export const dynamic = "force-dynamic";
 
@@ -86,6 +87,7 @@ export default async function BatchDetailsPage({ params }: { params: Promise<{ i
                       <th className="px-4 py-3 font-medium text-right">Cabezas</th>
                       <th className="px-4 py-3 font-medium text-right">Peso Neto (KG)</th>
                       <th className="px-4 py-3 font-medium text-right">Promedio (KG)</th>
+                      {isOpen && <th className="px-4 py-3 font-medium text-right">Acciones</th>}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-zinc-800 text-zinc-300">
@@ -94,7 +96,11 @@ export default async function BatchDetailsPage({ params }: { params: Promise<{ i
                         <td className="px-4 py-3">{i + 1}</td>
                         <td className="px-4 py-3 font-medium">{d.category}</td>
                         <td className="px-4 py-3">
-                          <span className={`px-2 py-0.5 rounded text-xs ${d.condition === 'BUENO' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400'}`}>
+                          <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+                            d.condition === 'GORDO' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 
+                            d.condition === 'FLACO' ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' : 
+                            'bg-rose-500/10 text-rose-400 border border-rose-500/20'
+                          }`}>
                             {d.condition}
                           </span>
                         </td>
@@ -103,11 +109,16 @@ export default async function BatchDetailsPage({ params }: { params: Promise<{ i
                         <td className="px-4 py-3 text-right text-zinc-500">
                           {d.quantity > 0 ? (d.netWeight / d.quantity).toFixed(1) : 0}
                         </td>
+                        {isOpen && (
+                          <td className="px-4 py-3">
+                            <BatchDetailActions detail={d} batchId={batch.id} />
+                          </td>
+                        )}
                       </tr>
                     ))}
                     {batch.details.length === 0 && (
                       <tr>
-                        <td colSpan={6} className="px-4 py-8 text-center text-zinc-500">
+                        <td colSpan={isOpen ? 7 : 6} className="px-4 py-8 text-center text-zinc-500">
                           No hay pesajes registrados.
                         </td>
                       </tr>

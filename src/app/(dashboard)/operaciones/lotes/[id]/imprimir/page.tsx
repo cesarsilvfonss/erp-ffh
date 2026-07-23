@@ -33,30 +33,30 @@ export default async function PrintBatchPage({ params }: { params: Promise<{ id:
   }, {} as Record<string, { headCount: number, netWeight: number, discountWeight: number, liquidWeight: number }>);
 
   return (
-    <div className="bg-white text-black min-h-screen p-8 print:p-0 font-sans">
-      <div className="max-w-4xl mx-auto">
+    <div className="bg-white text-black min-h-screen p-4 md:p-8 print:p-0 font-sans print:w-full print:max-w-none">
+      <div className="max-w-4xl mx-auto w-full">
         {/* HEADER */}
-        <div className="flex justify-between items-start border-b-2 border-black pb-6 mb-6">
+        <div className="flex flex-col sm:flex-row justify-between items-start border-b-2 border-black pb-4 mb-6 gap-4">
           <div>
-            <h1 className="text-3xl font-black uppercase tracking-tight">Sistema FFH</h1>
-            <p className="text-sm text-gray-500 font-medium">Liquidación de Compra de Hacienda</p>
+            <h1 className="text-2xl sm:text-3xl font-black uppercase tracking-tight">Sistema FFH</h1>
+            <p className="text-xs sm:text-sm text-gray-500 font-medium">Liquidación de Compra de Hacienda</p>
           </div>
-          <div className="text-right">
-            <h2 className="text-xl font-bold">Lote #{batch.batchNumber.toString().padStart(4, '0')}</h2>
-            <p className="text-sm text-gray-600">Fecha de Lote: {new Date(batch.date).toLocaleDateString()}</p>
-            <p className="text-sm text-gray-600">Liquidación impresa: {new Date().toLocaleDateString()}</p>
+          <div className="text-left sm:text-right">
+            <h2 className="text-lg sm:text-xl font-bold">Lote #{batch.batchNumber.toString().padStart(4, '0')}</h2>
+            <p className="text-xs sm:text-sm text-gray-600">Fecha de Lote: {new Date(batch.date).toLocaleDateString()}</p>
+            <p className="text-xs sm:text-sm text-gray-600">Liquidación: {new Date().toLocaleDateString()}</p>
           </div>
         </div>
 
         {/* INFO */}
-        <div className="grid grid-cols-2 gap-8 mb-8 text-sm">
-          <div className="p-4 border border-gray-200 rounded-lg bg-gray-50">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8 text-sm">
+          <div className="p-3 sm:p-4 border border-gray-200 rounded-lg bg-gray-50">
             <h3 className="font-bold text-gray-400 uppercase text-xs mb-2">Datos del Proveedor</h3>
             <p className="font-bold text-lg">{batch.provider.legalName}</p>
             {batch.provider.ruc && <p>RUC: {batch.provider.ruc}</p>}
             {batch.provider.address && <p>Dirección: {batch.provider.address}</p>}
           </div>
-          <div className="p-4 border border-gray-200 rounded-lg bg-gray-50">
+          <div className="p-3 sm:p-4 border border-gray-200 rounded-lg bg-gray-50">
             <h3 className="font-bold text-gray-400 uppercase text-xs mb-2">Datos de Faena</h3>
             <p className="font-bold text-lg">{batch.slaughterhouse?.legalName || "No especificado"}</p>
             <p>Estado del Lote: CERRADO Y LIQUIDADO</p>
@@ -65,9 +65,10 @@ export default async function PrintBatchPage({ params }: { params: Promise<{ id:
         </div>
 
         {/* ROMANEO */}
-        <div className="mb-8">
+        <div className="mb-8 overflow-x-auto">
           <h3 className="font-bold text-lg mb-3 border-b border-gray-200 pb-1">1. Detalle de Romaneo (Pesajes)</h3>
-          <table className="w-full text-sm text-left">
+          <div className="min-w-[600px] print:min-w-full">
+            <table className="w-full text-xs sm:text-sm text-left">
             <thead className="bg-gray-100 font-bold border-y border-gray-300">
               <tr>
                 <th className="py-2 px-3">#</th>
@@ -103,12 +104,14 @@ export default async function PrintBatchPage({ params }: { params: Promise<{ id:
               </tr>
             </tfoot>
           </table>
+          </div>
         </div>
 
         {/* DESBASTE */}
-        <div className="mb-8">
+        <div className="mb-8 overflow-x-auto">
           <h3 className="font-bold text-lg mb-3 border-b border-gray-200 pb-1">2. Cálculo de Desbaste y Peso Líquido por Categoría</h3>
-          <table className="w-full text-sm text-left border-collapse">
+          <div className="min-w-[600px] print:min-w-full">
+            <table className="w-full text-xs sm:text-sm text-left border-collapse">
             <thead className="bg-gray-100 font-bold border-y border-gray-300">
               <tr>
                 <th className="py-2 px-3">Categoría</th>
@@ -139,12 +142,14 @@ export default async function PrintBatchPage({ params }: { params: Promise<{ id:
               </tr>
             </tfoot>
           </table>
+          </div>
         </div>
 
         {/* LIQUIDACION */}
-        <div className="mb-12">
+        <div className="mb-12 overflow-x-auto">
           <h3 className="font-bold text-lg mb-3 border-b border-gray-200 pb-1">3. Liquidación Monetaria por Categorías</h3>
-          <table className="w-full text-sm text-left border border-gray-200">
+          <div className="min-w-[600px] print:min-w-full">
+            <table className="w-full text-xs sm:text-sm text-left border border-gray-200">
             <thead className="bg-gray-100 font-bold border-b border-gray-300">
               <tr>
                 <th className="py-2 px-3">Categoría</th>
@@ -170,6 +175,7 @@ export default async function PrintBatchPage({ params }: { params: Promise<{ id:
               </tr>
             </tfoot>
           </table>
+          </div>
         </div>
 
         {/* PRINT SCRIPT */}
