@@ -53,8 +53,9 @@ export function RomaneoForm({ batchId }: { batchId: string }) {
             required
             className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:border-emerald-500/50"
           >
-            <option value="BUENO">Bueno</option>
-            <option value="LASTIMADO">Lastimado</option>
+            <option value="GORDO">Gordo</option>
+            <option value="FLACO">Flaco</option>
+            <option value="DESCARTE">Descarte</option>
           </select>
         </div>
       </div>

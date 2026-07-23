@@ -14,13 +14,13 @@ type PriceSegment = {
 
 export function CloseBatchButton({ 
   batchId, 
-  categoryStats,
+  batchDetails,
   totalHeads,
   totalWeight,
   disabled
 }: { 
   batchId: string;
-  categoryStats: Record<string, { netWeight: number; headCount: number }>;
+  batchDetails: any[];
   totalHeads: number;
   totalWeight: number;
   disabled: boolean;
@@ -29,6 +29,18 @@ export function CloseBatchButton({
   const [loading, setLoading] = useState(false);
   const [merma, setMerma] = useState<number>(4);
   const [segments, setSegments] = useState<PriceSegment[]>([]);
+
+  const categoryStats = useMemo(() => {
+    return batchDetails.reduce((acc, d) => {
+      if (!acc[d.category]) acc[d.category] = { netWeight: 0, headCount: 0, conditions: {} };
+      acc[d.category].netWeight += d.netWeight;
+      acc[d.category].headCount += d.quantity;
+      if (!acc[d.category].conditions[d.condition]) acc[d.category].conditions[d.condition] = { netWeight: 0, headCount: 0 };
+      acc[d.category].conditions[d.condition].netWeight += d.netWeight;
+      acc[d.category].conditions[d.condition].headCount += d.quantity;
+      return acc;
+    }, {} as Record<string, { netWeight: number, headCount: number, conditions: Record<string, { netWeight: number, headCount: number }> }>);
+  }, [batchDetails]);
 
   // Inicializar o resetear segmentos cuando se abre o cambia la merma
   useEffect(() => {
@@ -164,8 +176,21 @@ export function CloseBatchButton({
 
                   return (
                     <div key={cat} className="bg-zinc-900/50 border border-zinc-800 rounded-xl overflow-hidden">
-                      <div className="bg-zinc-800/30 px-4 py-3 border-b border-zinc-800 flex justify-between items-center">
-                        <h4 className="font-bold text-zinc-200">{cat} <span className="text-zinc-500 font-normal text-sm">({stats.headCount} cabezas)</span></h4>
+                      <div className="bg-zinc-800/30 px-4 py-3 border-b border-zinc-800 flex flex-col md:flex-row md:justify-between md:items-center gap-2">
+                        <div>
+                          <h4 className="font-bold text-zinc-200">{cat} <span className="text-zinc-500 font-normal text-sm">({stats.headCount} cabezas)</span></h4>
+                          <div className="flex gap-2 mt-1 flex-wrap">
+                            {Object.entries(stats.conditions || {}).map(([cond, cStats]) => (
+                              <span key={cond} className={`text-[10px] font-medium px-1.5 py-0.5 rounded border ${
+                                cond === 'GORDO' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 
+                                cond === 'FLACO' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' : 
+                                'bg-rose-500/10 text-rose-400 border-rose-500/20'
+                              }`}>
+                                {cond}: {cStats.netWeight.toLocaleString()} KG ({cStats.headCount} cbz)
+                              </span>
+                            ))}
+                          </div>
+                        </div>
                         <div className="flex gap-4 text-xs">
                           <div className="text-zinc-400"><span className="block text-[10px] uppercase text-zinc-500">Bruto</span>{stats.netWeight.toLocaleString()} KG</div>
                           <div className="text-rose-400"><span className="block text-[10px] uppercase text-rose-500/70">Desbaste</span>-{mermaKilos.toLocaleString(undefined, {maximumFractionDigits:1})} KG</div>

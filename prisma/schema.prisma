@@ -129,6 +129,9 @@ enum AnimalCategory {
 }
 
 enum AnimalCondition {
+  GORDO
+  FLACO
+  DESCARTE
   BUENO
   LASTIMADO
 }
@@ -158,7 +161,7 @@ model BatchDetail {
   batchId   String
   batch     Batch           @relation(fields: [batchId], references: [id], onDelete: Cascade)
   category  AnimalCategory
-  condition AnimalCondition @default(BUENO)
+  condition AnimalCondition @default(GORDO)
   quantity  Int
   netWeight Float           // Peso neto
 

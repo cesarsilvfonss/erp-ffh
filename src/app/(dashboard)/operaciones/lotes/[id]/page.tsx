@@ -28,13 +28,7 @@ export default async function BatchDetailsPage({ params }: { params: Promise<{ i
     const totalWeight = batch.details.reduce((acc, d) => acc + d.netWeight, 0);
     const isOpen = batch.status === "OPEN";
 
-    // Pre-calculate category stats for the close modal
-    const categoryStats = batch.details.reduce((acc, d) => {
-      if (!acc[d.category]) acc[d.category] = { netWeight: 0, headCount: 0 };
-      acc[d.category].netWeight += d.netWeight;
-      acc[d.category].headCount += d.quantity;
-      return acc;
-    }, {} as Record<string, { netWeight: number, headCount: number }>);
+
 
     return (
       <div className="space-y-6">
@@ -60,7 +54,7 @@ export default async function BatchDetailsPage({ params }: { params: Promise<{ i
           {isOpen ? (
           <CloseBatchButton 
             batchId={batch.id} 
-            categoryStats={categoryStats} 
+            batchDetails={batch.details} 
             totalHeads={totalHeads}
             totalWeight={totalWeight}
             disabled={totalHeads === 0}
