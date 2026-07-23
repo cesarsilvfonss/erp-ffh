@@ -1,12 +1,22 @@
 "use client";
 
-import { Bell, Search, LogOut } from "lucide-react";
+import { Bell, Search, LogOut, Menu } from "lucide-react";
 import { signOut } from "next-auth/react";
+import { useMobileMenu } from "./MobileMenuContext";
 
 export function Header() {
+  const { toggle } = useMobileMenu();
+
   return (
-    <header className="h-16 border-b border-zinc-800 bg-zinc-950/50 backdrop-blur-xl flex items-center justify-between px-6 sticky top-0 z-10">
-      <div className="flex items-center gap-4 flex-1">
+    <header className="h-16 border-b border-zinc-800 bg-zinc-950/50 backdrop-blur-xl flex items-center justify-between px-4 md:px-6 sticky top-0 z-10">
+      <div className="flex items-center gap-2 md:gap-4 flex-1">
+        <button 
+          onClick={toggle}
+          className="p-2 -ml-2 text-zinc-400 hover:text-zinc-100 md:hidden transition-colors"
+        >
+          <Menu className="w-6 h-6" />
+        </button>
+        
         <div className="relative w-96 hidden md:block">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
           <input 

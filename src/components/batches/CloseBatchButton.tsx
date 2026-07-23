@@ -136,10 +136,10 @@ export function CloseBatchButton({
             
             <div className="p-6 space-y-6">
               
-              {/* MERMA GLOBAL */}
+              {/* DESBASTE GLOBAL */}
               <div className="flex items-center gap-4 bg-zinc-950 border border-zinc-800 rounded-xl p-4">
                 <div className="flex-1">
-                  <h3 className="font-medium text-zinc-200">Porcentaje de Merma</h3>
+                  <h3 className="font-medium text-zinc-200">Porcentaje de Desbaste</h3>
                   <p className="text-xs text-zinc-500">Se aplicará a todas las categorías para calcular el peso líquido.</p>
                 </div>
                 <div className="relative w-32">
@@ -168,15 +168,15 @@ export function CloseBatchButton({
                         <h4 className="font-bold text-zinc-200">{cat} <span className="text-zinc-500 font-normal text-sm">({stats.headCount} cabezas)</span></h4>
                         <div className="flex gap-4 text-xs">
                           <div className="text-zinc-400"><span className="block text-[10px] uppercase text-zinc-500">Bruto</span>{stats.netWeight.toLocaleString()} KG</div>
-                          <div className="text-rose-400"><span className="block text-[10px] uppercase text-rose-500/70">Merma</span>-{mermaKilos.toLocaleString(undefined, {maximumFractionDigits:1})} KG</div>
+                          <div className="text-rose-400"><span className="block text-[10px] uppercase text-rose-500/70">Desbaste</span>-{mermaKilos.toLocaleString(undefined, {maximumFractionDigits:1})} KG</div>
                           <div className="text-emerald-400 font-medium"><span className="block text-[10px] uppercase text-emerald-500/70">Líquido Total</span>{expectedLiquid.toLocaleString(undefined, {maximumFractionDigits:1})} KG</div>
                         </div>
                       </div>
                       
                       <div className="p-4 space-y-3">
                         {catSegments.map((seg, idx) => (
-                          <div key={seg.id} className="flex items-center gap-3">
-                            <div className="flex-1">
+                          <div key={seg.id} className="flex flex-col md:flex-row md:items-center gap-3 bg-zinc-950/50 md:bg-transparent p-3 md:p-0 rounded-lg">
+                            <div className="flex-1 w-full">
                               <div className="relative">
                                 <input 
                                   type="number" 
@@ -187,7 +187,7 @@ export function CloseBatchButton({
                                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-600 text-xs">KG Líq.</span>
                               </div>
                             </div>
-                            <div className="flex-1">
+                            <div className="flex-1 w-full">
                               <div className="relative">
                                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 text-sm">₲</span>
                                 <input 
@@ -199,23 +199,25 @@ export function CloseBatchButton({
                                 />
                               </div>
                             </div>
-                            <div className="w-24 text-right text-sm font-medium text-emerald-400/80">
-                              ₲ {((seg.liquidWeight || 0) * (seg.pricePerKg || 0)).toLocaleString()}
-                            </div>
-                            <div className="w-8 flex justify-end">
-                              {catSegments.length > 1 && (
-                                <button onClick={() => removeSegment(seg.id)} className="text-zinc-600 hover:text-rose-400 transition-colors p-1">
-                                  <Trash2 className="w-4 h-4" />
-                                </button>
-                              )}
+                            <div className="flex justify-between items-center w-full md:w-auto mt-2 md:mt-0">
+                              <div className="text-right text-sm font-medium text-emerald-400/80 md:w-24">
+                                ₲ {((seg.liquidWeight || 0) * (seg.pricePerKg || 0)).toLocaleString()}
+                              </div>
+                              <div className="w-8 flex justify-end">
+                                {catSegments.length > 1 && (
+                                  <button onClick={() => removeSegment(seg.id)} className="text-zinc-600 hover:text-rose-400 transition-colors p-1 bg-zinc-900 rounded md:bg-transparent">
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                )}
+                              </div>
                             </div>
                           </div>
                         ))}
                         
                         {/* Fila sugerida si hay sobrante de kilos */}
                         {remaining > 0.05 && (
-                          <div className="flex items-center gap-3 mt-4 pt-4 border-t border-zinc-800/50">
-                            <div className="flex-1">
+                          <div className="flex flex-col md:flex-row md:items-center gap-3 mt-4 pt-4 border-t border-zinc-800/50">
+                            <div className="flex-1 w-full">
                               <div className="relative opacity-60">
                                 <input 
                                   type="text" 
@@ -226,7 +228,7 @@ export function CloseBatchButton({
                                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-600 text-xs">KG Restantes</span>
                               </div>
                             </div>
-                            <div className="flex-1">
+                            <div className="flex-1 w-full">
                               <div className="relative">
                                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-emerald-500/50 text-sm">₲</span>
                                 <input 
@@ -248,10 +250,10 @@ export function CloseBatchButton({
                                 />
                               </div>
                             </div>
-                            <div className="w-24 text-right text-xs text-zinc-500 italic">
+                            <div className="w-full md:w-24 text-left md:text-right text-xs text-zinc-500 italic mt-1 md:mt-0">
                               Agregue el precio para completar
                             </div>
-                            <div className="w-8"></div>
+                            <div className="hidden md:block w-8"></div>
                           </div>
                         )}
                         {remaining < -0.05 && (

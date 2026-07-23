@@ -95,16 +95,16 @@ export default async function PrintBatchPage({ params }: { params: Promise<{ id:
           </table>
         </div>
 
-        {/* MERMA */}
+        {/* DESBASTE */}
         <div className="mb-8">
-          <h3 className="font-bold text-lg mb-3 border-b border-gray-200 pb-1">2. Cálculo de Merma y Peso Líquido</h3>
+          <h3 className="font-bold text-lg mb-3 border-b border-gray-200 pb-1">2. Cálculo de Desbaste y Peso Líquido</h3>
           <div className="flex gap-12 text-sm bg-gray-50 p-4 rounded-lg border border-gray-200">
             <div>
               <p className="text-gray-500 font-medium">Peso Bruto Total</p>
               <p className="font-bold text-xl">{batch.closure.totalNetWeight.toLocaleString()} KG</p>
             </div>
             <div>
-              <p className="text-gray-500 font-medium">Merma Aplicada ({batch.closure.discountPercentage}%)</p>
+              <p className="text-gray-500 font-medium">Desbaste Aplicado ({batch.closure.discountPercentage}%)</p>
               <p className="font-bold text-xl text-red-600">-{batch.closure.totalDiscountWeight.toLocaleString()} KG</p>
             </div>
             <div>

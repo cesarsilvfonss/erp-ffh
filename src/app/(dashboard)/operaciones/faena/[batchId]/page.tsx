@@ -59,7 +59,7 @@ export default async function FaenaDetailsPage({ params }: { params: Promise<{ b
             <CheckCircle2 className="w-5 h-5 text-emerald-400" />
             <h2 className="font-bold text-emerald-400">Faena Registrada y Costeada Exitosamente</h2>
           </div>
-          <div className="p-6">
+          <div className="p-6 overflow-x-auto">
             <table className="w-full text-left text-sm">
               <thead className="text-zinc-400 border-b border-zinc-800">
                 <tr>

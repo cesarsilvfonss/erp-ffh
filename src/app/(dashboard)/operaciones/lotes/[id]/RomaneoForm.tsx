@@ -32,7 +32,7 @@ export function RomaneoForm({ batchId }: { batchId: string }) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <label className="block text-xs font-medium text-zinc-400 mb-1">Categoría</label>
           <select 
@@ -59,7 +59,7 @@ export function RomaneoForm({ batchId }: { batchId: string }) {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <label className="block text-xs font-medium text-zinc-400 mb-1">Cabezas</label>
           <input 

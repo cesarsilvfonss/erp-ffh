@@ -152,7 +152,7 @@ export default async function BatchDetailsPage({ params }: { params: Promise<{ i
                     <p className="text-zinc-100 font-medium">{batch.closure.totalNetWeight.toLocaleString()} KG</p>
                   </div>
                   <div>
-                    <p className="text-zinc-500">Merma ({batch.closure.discountPercentage}%)</p>
+                    <p className="text-zinc-500">Desbaste ({batch.closure.discountPercentage}%)</p>
                     <p className="text-rose-400 font-medium">-{batch.closure.totalDiscountWeight.toLocaleString()} KG</p>
                   </div>
                   <div>

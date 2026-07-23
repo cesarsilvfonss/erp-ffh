@@ -46,9 +46,9 @@ export function CreateProviderModal() {
       </button>
 
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto">
-          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl w-full max-w-md overflow-hidden shadow-2xl my-8">
-            <div className="flex items-center justify-between p-4 border-b border-zinc-800 bg-zinc-900 sticky top-0 z-10">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl w-full max-w-md shadow-2xl my-4 md:my-8 max-h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between p-4 border-b border-zinc-800 bg-zinc-900 shrink-0">
               <h2 className="font-bold text-lg text-zinc-100">Registrar Proveedor</h2>
               <button 
                 onClick={() => setIsOpen(false)}
@@ -59,7 +59,7 @@ export function CreateProviderModal() {
               </button>
             </div>
             
-            <form onSubmit={handleSubmit} className="p-6 space-y-4">
+            <form onSubmit={handleSubmit} className="p-6 space-y-4 overflow-y-auto">
               
               <div className="flex items-center gap-2 mb-2">
                 <input 

@@ -11,9 +11,11 @@ import {
   Store,
   Wallet,
   ArrowRightLeft,
-  Factory
+  Factory,
+  X
 } from "lucide-react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
+import { useMobileMenu } from "./MobileMenuContext";
 
 const menuItems = [
   { icon: LayoutDashboard, label: "Dashboard", href: "/" },
@@ -29,15 +31,36 @@ const menuItems = [
 
 export function Sidebar() {
   const pathname = usePathname();
+  const { isOpen, close } = useMobileMenu();
+
+  const sidebarClasses = `
+    fixed inset-y-0 left-0 z-50 w-64 bg-zinc-950 border-r border-zinc-800 flex flex-col h-full transform transition-transform duration-300 ease-in-out
+    md:relative md:translate-x-0
+    ${isOpen ? "translate-x-0" : "-translate-x-full"}
+  `;
 
   return (
-    <div className="w-64 bg-zinc-950 border-r border-zinc-800 flex flex-col h-full shrink-0">
-      <div className="p-6">
-        <h2 className="text-xl font-bold bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">
-          FFH Asociados
-        </h2>
-        <p className="text-zinc-500 text-xs mt-1 font-medium tracking-wider uppercase">ERP System</p>
-      </div>
+    <>
+      {/* Overlay para móviles */}
+      {isOpen && (
+        <div 
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 md:hidden"
+          onClick={close}
+        />
+      )}
+      
+      <div className={sidebarClasses}>
+        <div className="p-6 flex items-center justify-between">
+          <div>
+            <h2 className="text-xl font-bold bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">
+              FFH Asociados
+            </h2>
+            <p className="text-zinc-500 text-xs mt-1 font-medium tracking-wider uppercase">ERP System</p>
+          </div>
+          <button onClick={close} className="p-2 -mr-2 text-zinc-400 hover:text-zinc-100 md:hidden">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
 
       <nav className="flex-1 px-4 space-y-1 overflow-y-auto">
         {menuItems.map((item) => {
