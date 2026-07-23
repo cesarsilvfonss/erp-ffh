@@ -70,7 +70,7 @@ export async function createSale(data: {
         data: {
           saleId: sale.id,
           clientId: data.clientId,
-          amount: netValue,
+          amount: totalValue, // Generado por el valor bruto
           dueDate: new Date(data.date), // O sumar días según término del cliente
           status: "PENDING"
         }
@@ -78,7 +78,7 @@ export async function createSale(data: {
 
       // 4. Actualizar Inventario y crear Movimiento
       for (const detail of data.details) {
-        const updatedLot = await tx.inventoryLot.update({
+        await tx.inventoryLot.update({
           where: { id: detail.inventoryLotId },
           data: { currentStock: { decrement: detail.quantityKg } }
         });
@@ -88,10 +88,9 @@ export async function createSale(data: {
             inventoryLotId: detail.inventoryLotId,
             itemId: detail.itemId,
             type: "OUT",
-            quantity: detail.quantityKg,
-            stockAfter: updatedLot.currentStock,
-            reference: `Venta ${data.invoiceNumber || sale.id}`,
-            description: "Venta a cliente"
+            quantity: detail.quantityKg, // Positivo para cantidad sacada
+            referenceId: sale.id,
+            concept: `Venta Factura ${data.invoiceNumber || 'S/N'}`
           }
         });
       }

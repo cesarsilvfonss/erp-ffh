@@ -12,28 +12,41 @@ import {
   Wallet,
   ArrowRightLeft,
   Factory,
-  X
+  X,
+  LogOut,
+  UserCog
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useMobileMenu } from "./MobileMenuContext";
+import { useSession, signOut } from "next-auth/react";
+import { useState } from "react";
+import { ChangePasswordModal } from "./ChangePasswordModal";
 
-const menuItems = [
-  { icon: LayoutDashboard, label: "Dashboard", href: "/" },
-  { icon: Store, label: "Compras (Lotes)", href: "/operaciones/lotes" },
-  { icon: Factory, label: "Faena", href: "/operaciones/faena" },
-  { icon: CircleDollarSign, label: "Ventas", href: "/operaciones/ventas" },
-  { icon: Beef, label: "Inventario", href: "/inventario" },
-  { icon: ArrowRightLeft, label: "Finanzas", href: "/finanzas" },
-  { icon: Wallet, label: "Cuentas por Cobrar/Pagar", href: "/cuentas" },
-  { icon: Users, label: "Clientes", href: "/terceros/clientes" },
-  { icon: Users, label: "Proveedores", href: "/terceros/proveedores" },
-  { icon: Settings, label: "Configuración (Gastos)", href: "/configuracion/gastos" },
-  { icon: Settings, label: "Catálogo Artículos", href: "/configuracion/articulos" },
+const allMenuItems = [
+  { icon: LayoutDashboard, label: "Dashboard", href: "/", roles: ["ADMIN", "ADMINISTRATION"] },
+  { icon: Store, label: "Compras (Lotes)", href: "/operaciones/lotes", roles: ["ADMIN", "ADMINISTRATION", "WEIGHER"] },
+  { icon: Factory, label: "Faena", href: "/operaciones/faena", roles: ["ADMIN", "ADMINISTRATION", "WEIGHER"] },
+  { icon: CircleDollarSign, label: "Ventas", href: "/operaciones/ventas", roles: ["ADMIN", "ADMINISTRATION"] },
+  { icon: Beef, label: "Inventario", href: "/inventario", roles: ["ADMIN", "ADMINISTRATION"] },
+  { icon: ArrowRightLeft, label: "Finanzas (Bancos)", href: "/operaciones/finanzas/bancos", roles: ["ADMIN", "ADMINISTRATION"] },
+  { icon: Wallet, label: "Cuentas por Cobrar", href: "/operaciones/finanzas/cuentas-cobrar", roles: ["ADMIN", "ADMINISTRATION"] },
+  { icon: CircleDollarSign, label: "Cartera Cheques", href: "/operaciones/finanzas/cheques", roles: ["ADMIN", "ADMINISTRATION"] },
+  { icon: Users, label: "Clientes", href: "/terceros/clientes", roles: ["ADMIN", "ADMINISTRATION"] },
+  { icon: Users, label: "Proveedores", href: "/terceros/proveedores", roles: ["ADMIN", "ADMINISTRATION"] },
+  { icon: Settings, label: "Gastos", href: "/configuracion/gastos", roles: ["ADMIN", "ADMINISTRATION"] },
+  { icon: Settings, label: "Artículos", href: "/configuracion/articulos", roles: ["ADMIN", "ADMINISTRATION"] },
+  { icon: UserCog, label: "Usuarios", href: "/configuracion/usuarios", roles: ["ADMIN"] },
 ];
 
 export function Sidebar() {
   const pathname = usePathname();
   const { isOpen, close } = useMobileMenu();
+  const { data: session } = useSession();
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+
+  const userRole = session?.user?.role || "WEIGHER";
+  
+  const menuItems = allMenuItems.filter(item => item.roles.includes(userRole));
 
   const sidebarClasses = `
     fixed inset-y-0 left-0 z-50 w-64 bg-zinc-950 border-r border-zinc-800 flex flex-col h-full transform transition-transform duration-300 ease-in-out
@@ -88,13 +101,27 @@ export function Sidebar() {
         })}
       </nav>
 
-      <div className="p-4 border-t border-zinc-800">
-        <div className="bg-zinc-900/50 p-3 rounded-lg border border-zinc-800/50">
-          <p className="text-xs text-zinc-400">Usuario Activo</p>
-          <p className="text-sm text-zinc-200 font-medium truncate">Admin</p>
+      <div className="p-4 border-t border-zinc-800 space-y-2">
+        <div className="bg-zinc-900/50 p-3 rounded-lg border border-zinc-800/50 flex justify-between items-center">
+          <div className="overflow-hidden cursor-pointer" onClick={() => setIsPasswordModalOpen(true)}>
+            <p className="text-xs text-zinc-400">{userRole}</p>
+            <p className="text-sm text-zinc-200 font-medium truncate hover:text-emerald-400 transition-colors">{session?.user?.name || "Usuario"}</p>
+          </div>
+          <button 
+            onClick={() => signOut()} 
+            className="p-2 text-zinc-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors flex-shrink-0"
+            title="Cerrar Sesión"
+          >
+            <LogOut className="w-4 h-4" />
+          </button>
         </div>
       </div>
     </div>
+    
+    <ChangePasswordModal 
+      isOpen={isPasswordModalOpen} 
+      onClose={() => setIsPasswordModalOpen(false)} 
+    />
     </>
   );
 }

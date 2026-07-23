@@ -15,7 +15,8 @@ datasource db {
 
 enum RoleEnum {
   ADMIN
-  OPERATOR
+  ADMINISTRATION
+  WEIGHER
 }
 
 model User {
@@ -23,7 +24,8 @@ model User {
   name      String
   email     String   @unique
   password  String
-  role      RoleEnum @default(OPERATOR)
+  role      RoleEnum @default(WEIGHER)
+  status    Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -56,7 +58,7 @@ model Parameter {
 }
 
 // ========================================
-// 3. Catálogos Base (Terceros y Artículos)
+// 3. Catálogos Base (Clientes, Proveedores, Artículos)
 // ========================================
 
 model Provider {
@@ -129,8 +131,6 @@ enum BatchStatus {
   CLOSED // Cerrado
 }
 
-// AnimalCategory enum removed in favor of dynamic Items
-
 enum AnimalCondition {
   GORDO
   FLACO
@@ -178,94 +178,79 @@ model BatchClosure {
   batch   Batch  @relation(fields: [batchId], references: [id], onDelete: Cascade)
 
   // Resumen de pesos
-  totalNetWeight      Float // Peso bruto total
-  discountApplied     Boolean @default(true)
-  discountPercentage  Float   @default(4.0)
-  totalDiscountWeight Float
-  totalLiquidWeight   Float
+  totalHeads        Int
+  totalGrossWeight  Float // Sumatoria peso original
+  discountWeight    Float // Kilos de desbaste
+  totalLiquidWeight Float // Kilos finales a pagar
 
-  // Valor financiero
-  totalValue Float // Suma de (kilos líquidos * precio)
-
-  prices BatchClosurePrice[]
+  // Valores financieros
+  totalValue     Float // Valor total a pagar
+  discountAmount Float // En guaraníes (por desbaste si aplica)
+  netValue       Float // totalValue - discountAmount
 
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+
+  prices BatchClosurePrice[]
 }
 
 model BatchClosurePrice {
-  id           String       @id @default(cuid())
-  closureId    String
-  closure      BatchClosure @relation(fields: [closureId], references: [id], onDelete: Cascade)
-  itemId       String
-  item         Item         @relation(fields: [itemId], references: [id])
+  id             String       @id @default(cuid())
+  batchClosureId String
+  batchClosure   BatchClosure @relation(fields: [batchClosureId], references: [id], onDelete: Cascade)
+  itemId         String
+  item           Item         @relation(fields: [itemId], references: [id])
+
   liquidWeight Float
   pricePerKg   Float
-  totalValue   Float
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
-}
 
-enum SlaughterStatus {
-  OPEN
-  CLOSED
-}
-
-enum SlaughterCondition {
-  CON_COBERTURA
-  SIN_COBERTURA
-  FLACO
-  GOLPEADO
+  createdAt DateTime @default(now())
 }
 
 model Slaughter {
-  id      String          @id @default(cuid())
-  batchId String          @unique
-  batch   Batch           @relation(fields: [batchId], references: [id], onDelete: Cascade)
-  date    DateTime
-  status  SlaughterStatus @default(OPEN)
+  id                String   @id @default(cuid())
+  batchId           String   @unique
+  batch             Batch    @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  date              DateTime
+  totalCarcassWeight Float    @default(0) // Kilos totales en gancho
+  performance       Float    @default(0) // Rendimiento %
 
-  // Cierre data
-  totalWeight Float?
-  yield       Float?
+  createdAt DateTime @default(now())
 
-  createdAt DateTime          @default(now())
-  details   SlaughterDetail[]
+  details SlaughterDetail[]
 }
 
 model SlaughterDetail {
-  id             String             @id @default(cuid())
-  slaughterId    String
-  slaughter      Slaughter          @relation(fields: [slaughterId], references: [id], onDelete: Cascade)
-  sequenceNumber Int                @default(0) // Secuencial 1, 2, 3...
-  itemId         String
-  item           Item               @relation(fields: [itemId], references: [id])
-  condition      SlaughterCondition
-  weight         Float // Peso de una media res (0.5 cabeza)
+  id          String    @id @default(cuid())
+  slaughterId String
+  slaughter   Slaughter @relation(fields: [slaughterId], references: [id], onDelete: Cascade)
+  itemId      String
+  item        Item      @relation(fields: [itemId], references: [id])
+
+  weight Float // Kilos producidos
 
   createdAt DateTime @default(now())
 }
 
 // ========================================
-// 5. Inventario y Costos
+// 5. Inventario General (Lotes)
 // ========================================
 
 model InventoryLot {
-  id           String   @id @default(cuid())
-  batchId      String?  // Opcional por si entra inventario manual
-  batch        Batch?   @relation(fields: [batchId], references: [id])
-  itemId       String
-  item         Item     @relation(fields: [itemId], references: [id])
-  
-  initialStock Float    @default(0) // KG con el que entró
-  currentStock Float    @default(0) // KG disponibles
-  unitCost     Float    @default(0) // Costo calculado al cierre de faena o manual
-  
-  movements    InventoryMovement[]
-  saleDetails  SaleDetail[]
+  id      String  @id @default(cuid())
+  itemId  String
+  item    Item    @relation(fields: [itemId], references: [id])
+  batchId String? // Puede ser null si es un ingreso manual inicial
+  batch   Batch?  @relation(fields: [batchId], references: [id])
 
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  initialStock Float
+  currentStock Float
+  unitCost     Float // Costo calculado al momento de la faena (Total Pagado / Kilos Gancho)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  movements   InventoryMovement[]
+  saleDetails SaleDetail[]
 }
 
 enum MovementType {
@@ -277,15 +262,14 @@ enum MovementType {
 model InventoryMovement {
   id             String       @id @default(cuid())
   inventoryLotId String
-  inventoryLot   InventoryLot @relation(fields: [inventoryLotId], references: [id], onDelete: Cascade)
+  inventoryLot   InventoryLot @relation(fields: [inventoryLotId], references: [id])
   itemId         String
   item           Item         @relation(fields: [itemId], references: [id])
-  type           MovementType
-  quantity       Float // Cantidad movida (siempre positiva)
-  stockAfter     Float // Stock resultante tras el movimiento
-  date           DateTime     @default(now())
-  reference      String? // Ej: "Faena #12", "Venta #001-001-0000001"
-  description    String?
+
+  type        MovementType
+  quantity    Float // Positivo o Negativo
+  referenceId String? // ID de Venta, Compra, Ajuste
+  concept     String // ej: "Venta Fac. 001", "Ajuste de inventario"
 
   createdAt DateTime @default(now())
 }
@@ -336,7 +320,7 @@ model SaleDetail {
 }
 
 // ========================================
-// 7. Finanzas (Bancos, Cuentas, Gastos)
+// 7. Finanzas (Bancos, Pagos, Gastos)
 // ========================================
 
 model Currency {
@@ -362,7 +346,9 @@ model BankAccount {
   status         Boolean  @default(true)
   createdAt      DateTime @default(now())
 
-  transactions Transaction[]
+  transactions  Transaction[]
+  payments      Payment[]     // Pagos directos depositados en cuenta
+  depositedChecks Check[]    @relation("CheckDepositBank")
 }
 
 enum AccountStatus {
@@ -377,13 +363,72 @@ model AccountReceivable {
   sale       Sale?         @relation(fields: [saleId], references: [id])
   clientId   String
   client     Client        @relation(fields: [clientId], references: [id])
-  amount     Float
+  amount     Float         // Valor Bruto de la venta
   paidAmount Float         @default(0)
   status     AccountStatus @default(PENDING)
   dueDate    DateTime
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  payments  Payment[]
+}
+
+enum PaymentMethod {
+  CASH
+  TRANSFER
+  CHECK
+  RETENTION
+}
+
+model Payment {
+  id                  String            @id @default(cuid())
+  accountReceivableId String
+  accountReceivable   AccountReceivable @relation(fields: [accountReceivableId], references: [id])
+  date                DateTime
+  amount              Float
+  method              PaymentMethod
+  reference           String?           // Nro Transferencia, Nro Recibo, etc
+  
+  // Relacionado si entra directo a un Banco (CASH o TRANSFER)
+  bankAccountId       String?
+  bankAccount         BankAccount?      @relation(fields: [bankAccountId], references: [id])
+  
+  // Relacionado si es Cheque Diferido
+  check               Check?
+  
+  // Transacción que afecta el saldo bancario (opcional, p.e. Retención no afecta banco)
+  transactionId       String?           @unique
+  transaction         Transaction?      @relation(fields: [transactionId], references: [id])
+
+  createdAt           DateTime          @default(now())
+}
+
+enum CheckStatus {
+  IN_PORTFOLIO // En cartera
+  DEPOSITED    // Depositado / Efectivizado
+  REJECTED     // Rechazado
+}
+
+model Check {
+  id              String      @id @default(cuid())
+  bankName        String      // Banco de emisión (el del cliente)
+  checkNumber     String
+  issueDate       DateTime
+  dueDate         DateTime
+  amount          Float
+  status          CheckStatus @default(IN_PORTFOLIO)
+  
+  // Vinculado al pago original
+  paymentId       String      @unique
+  payment         Payment     @relation(fields: [paymentId], references: [id])
+  
+  // Cuando se deposita o efectiviza, va a un banco
+  depositBankId   String?
+  depositBank     BankAccount? @relation("CheckDepositBank", fields: [depositBankId], references: [id])
+
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
 }
 
 enum PayableType {
@@ -446,8 +491,10 @@ model Transaction {
   amount        Float
   reference     String?
   concept       String
-  userId        String
-  user          User            @relation(fields: [userId], references: [id])
+  userId        String? // Opcional temporalmente o si es sistema automático
+  user          User?           @relation(fields: [userId], references: [id])
 
   createdAt DateTime @default(now())
+  
+  payment   Payment?
 }
