@@ -5,6 +5,7 @@ import { ArrowLeft, CheckCircle2 } from "lucide-react";
 import { RomaneoForm } from "./RomaneoForm";
 import { CloseBatchButton } from "@/components/batches/CloseBatchButton";
 import { BatchDetailActions } from "@/components/batches/BatchDetailActions";
+import { GeneratePdfButton } from "@/components/batches/GeneratePdfButton";
 
 export const dynamic = "force-dynamic";
 
@@ -142,13 +143,7 @@ export default async function BatchDetailsPage({ params }: { params: Promise<{ i
               <div className="bg-zinc-900/50 border border-emerald-900/50 rounded-xl p-6">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-emerald-400 font-semibold">Resumen de Liquidación (Cierre)</h3>
-                  <Link 
-                    href={`/operaciones/lotes/${batch.id}/imprimir`}
-                    target="_blank"
-                    className="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-sm rounded-lg border border-zinc-700 transition-colors flex items-center gap-2"
-                  >
-                    Imprimir Liquidación
-                  </Link>
+                  <GeneratePdfButton batch={batch} />
                 </div>
 
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm mb-6 pb-6 border-b border-emerald-900/30">
