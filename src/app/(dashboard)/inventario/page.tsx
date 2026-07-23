@@ -10,7 +10,11 @@ export default async function InventoryPage() {
     },
     include: {
       item: true,
-      batch: true
+      batch: {
+        include: {
+          provider: true
+        }
+      }
     },
     orderBy: { createdAt: "desc" },
   });
@@ -67,6 +71,7 @@ export default async function InventoryPage() {
               <tr>
                 <th className="px-6 py-3 font-medium">Artículo</th>
                 <th className="px-6 py-3 font-medium">Lote Origen</th>
+                <th className="px-6 py-3 font-medium">Proveedor</th>
                 <th className="px-6 py-3 font-medium text-right">KG Disponibles</th>
                 <th className="px-6 py-3 font-medium text-right">Costo Unitario</th>
                 <th className="px-6 py-3 font-medium text-right">Valor Total</th>
@@ -81,6 +86,9 @@ export default async function InventoryPage() {
                   </td>
                   <td className="px-6 py-4 font-medium text-cyan-400">
                     {lot.batch ? `Lote #${lot.batch.batchNumber.toString().padStart(4, '0')}` : 'Ingreso Manual'}
+                  </td>
+                  <td className="px-6 py-4 text-zinc-400">
+                    {lot.batch?.provider?.legalName || '-'}
                   </td>
                   <td className="px-6 py-4 text-right">
                     <span className="px-2 py-1 bg-emerald-500/10 text-emerald-400 rounded-md font-medium">
