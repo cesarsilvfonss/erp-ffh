@@ -30,7 +30,7 @@ export function CheckList({ initialChecks, banks }: { initialChecks: any[], bank
       setSelectedBankId("");
       router.refresh();
     } else {
-      alert(res.error || "Error al depositar el cheque");
+      alert((res as any).error || "Error al depositar el cheque");
     }
     setIsSubmitting(false);
   }

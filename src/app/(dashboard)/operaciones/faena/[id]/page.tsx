@@ -32,11 +32,21 @@ export default async function FaenaDetailsPage({ params }: { params: Promise<{ i
 
   if (!slaughter) return notFound();
 
-  const isOpen = slaughter.status === "OPEN";
+  const isOpen = slaughter.batch.status === "IN_SLAUGHTER" || slaughter.batch.status === "OPEN";
 
   // Calcular totales del Lote (Compra)
   const totalBoughtHeads = slaughter.batch.details.reduce((acc, d) => acc + d.quantity, 0);
   const totalBoughtWeight = slaughter.batch.details.reduce((acc, d) => acc + d.netWeight, 0);
+
+  // Calcular totales de Faena (Gancho)
+  const totalSlaughterHeads = slaughter.details.length; // 1 detalle = 1 media res, o 1 animal? Asumimos 1 detalle por animal pesado
+  const totalSlaughterWeight = slaughter.details.reduce((acc, d) => acc + d.weight, 0);
+
+  // Mapear detalles de faena con sus items
+  const mappedSlaughterDetails = slaughter.details.map(d => ({
+    ...d,
+    itemName: d.item.name
+  }));
 
   // Agrupar por artículo en la compra
   const boughtStats = slaughter.batch.details.reduce((acc, d) => {
@@ -176,9 +186,7 @@ export default async function FaenaDetailsPage({ params }: { params: Promise<{ i
               <table className="w-full text-left text-sm relative">
                 <thead className="bg-zinc-950 text-zinc-400 sticky top-0 shadow-md">
                   <tr>
-                    <th className="px-4 py-3 font-medium">#</th>
                     <th className="px-4 py-3 font-medium">Categoría</th>
-                    <th className="px-4 py-3 font-medium">Condición</th>
                     <th className="px-4 py-3 font-medium text-right">Peso (KG)</th>
                     <th className="px-4 py-3 font-medium text-right">Hora</th>
                     {isOpen && <th className="px-4 py-3 font-medium text-right">Acciones</th>}
@@ -187,18 +195,7 @@ export default async function FaenaDetailsPage({ params }: { params: Promise<{ i
                 <tbody className="divide-y divide-zinc-800 text-zinc-300">
                   {slaughter.details.map((d) => (
                     <tr key={d.id} className="hover:bg-zinc-800/50">
-                      <td className="px-4 py-2 text-zinc-500 font-mono text-xs">{d.sequenceNumber}</td>
                       <td className="px-4 py-2 font-medium">{d.item.name}</td>
-                      <td className="px-4 py-2">
-                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${
-                          d.condition === 'CON_COBERTURA' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 
-                          d.condition === 'SIN_COBERTURA' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' : 
-                          d.condition === 'FLACO' ? 'bg-orange-500/10 text-orange-400 border-orange-500/20' : 
-                          'bg-rose-500/10 text-rose-400 border-rose-500/20'
-                        }`}>
-                          {d.condition.replace('_', ' ')}
-                        </span>
-                      </td>
                       <td className="px-4 py-2 text-right font-medium text-emerald-400">{d.weight}</td>
                       <td className="px-4 py-2 text-right text-xs text-zinc-500">
                         {new Date(d.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
@@ -220,7 +217,7 @@ export default async function FaenaDetailsPage({ params }: { params: Promise<{ i
                   ))}
                   {slaughter.details.length === 0 && (
                     <tr>
-                      <td colSpan={6} className="px-4 py-8 text-center text-zinc-500">
+                      <td colSpan={isOpen ? 4 : 3} className="px-4 py-8 text-center text-zinc-500">
                         No hay medias reses registradas. Usa el formulario de arriba para comenzar.
                       </td>
                     </tr>

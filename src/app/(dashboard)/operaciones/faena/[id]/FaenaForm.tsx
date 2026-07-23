@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { addFaenaDetail } from "@/actions/faena";
-import { SlaughterCondition, Item } from "@prisma/client";
+import { Item } from "@prisma/client";
 import { Save } from "lucide-react";
 
 export function FaenaForm({ 
@@ -13,7 +13,6 @@ export function FaenaForm({
   availableItems: Item[];
 }) {
   const [itemId, setItemId] = useState<string>(availableItems[0]?.id || "");
-  const [condition, setCondition] = useState<SlaughterCondition>("CON_COBERTURA");
   const [weight, setWeight] = useState("");
   const [loading, setLoading] = useState(false);
   
@@ -32,7 +31,6 @@ export function FaenaForm({
     const res = await addFaenaDetail({
       slaughterId,
       itemId,
-      condition,
       weight: parseFloat(weight)
     });
 
@@ -59,7 +57,7 @@ export function FaenaForm({
 
       <form onSubmit={handleSubmit} className="flex flex-col md:flex-row gap-3 items-end">
         
-        <div className="w-full md:w-1/3">
+        <div className="w-full md:w-1/2">
           <label className="block text-xs font-medium text-zinc-400 mb-1">Categoría</label>
           <select 
             value={itemId}
@@ -72,22 +70,7 @@ export function FaenaForm({
           </select>
         </div>
 
-        <div className="w-full md:w-1/3">
-          <label className="block text-xs font-medium text-zinc-400 mb-1">Cobertura / Estado</label>
-          <select 
-            value={condition}
-            onChange={(e) => setCondition(e.target.value as SlaughterCondition)}
-            disabled={loading}
-            className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2.5 text-sm text-zinc-100 focus:outline-none focus:border-emerald-500/50"
-          >
-            <option value="CON_COBERTURA">Con Cobertura</option>
-            <option value="SIN_COBERTURA">Sin Cobertura</option>
-            <option value="FLACO">Flaco</option>
-            <option value="GOLPEADO">Golpeado</option>
-          </select>
-        </div>
-
-        <div className="w-full md:w-1/3 relative">
+        <div className="w-full md:w-1/2 relative">
           <label className="block text-xs font-medium text-zinc-400 mb-1">Peso (KG) *</label>
           <input 
             ref={weightInputRef}

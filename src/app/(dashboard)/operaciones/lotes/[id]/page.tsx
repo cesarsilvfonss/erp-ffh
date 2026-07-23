@@ -158,11 +158,11 @@ export default async function BatchDetailsPage({ params }: { params: Promise<{ i
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm mb-6 pb-6 border-b border-emerald-900/30">
                   <div>
                     <p className="text-zinc-500">Peso Bruto</p>
-                    <p className="text-zinc-100 font-medium">{batch.closure.totalNetWeight.toLocaleString()} KG</p>
+                    <p className="text-zinc-100 font-medium">{batch.closure.totalGrossWeight.toLocaleString()} KG</p>
                   </div>
                   <div>
-                    <p className="text-zinc-500">Desbaste ({batch.closure.discountPercentage}%)</p>
-                    <p className="text-rose-400 font-medium">-{batch.closure.totalDiscountWeight.toLocaleString()} KG</p>
+                    <p className="text-zinc-500">Desbaste Total</p>
+                    <p className="text-rose-400 font-medium">-{batch.closure.discountWeight.toLocaleString()} KG</p>
                   </div>
                   <div>
                     <p className="text-zinc-500">Peso Líquido</p>
@@ -192,7 +192,7 @@ export default async function BatchDetailsPage({ params }: { params: Promise<{ i
                             <td className="py-2 text-zinc-300">{p.item.name}</td>
                             <td className="py-2 text-right text-emerald-400/80">{p.liquidWeight.toLocaleString()} KG</td>
                             <td className="py-2 text-right text-zinc-400">₲ {p.pricePerKg.toLocaleString()}</td>
-                            <td className="py-2 text-right font-medium text-emerald-400">₲ {p.totalValue.toLocaleString()}</td>
+                            <td className="py-2 text-right font-medium text-emerald-400">₲ {(p.pricePerKg * p.liquidWeight).toLocaleString()}</td>
                           </tr>
                         ))}
                       </tbody>

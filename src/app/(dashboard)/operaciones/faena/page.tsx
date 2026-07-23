@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { ArrowRight, Search, PlayCircle } from "lucide-react";
+import { ArrowRight, Search, PlayCircle, Clock, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
 import { InitiateFaenaButton } from "./InitiateFaenaButton";
 
@@ -106,13 +106,13 @@ export default async function FaenaListPage() {
                       {new Date(slaughter.date).toLocaleDateString()}
                     </td>
                     <td className="px-6 py-4">
-                      {slaughter.status === "OPEN" ? (
-                        <span className="px-2 py-1 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 text-xs font-bold uppercase">
-                          En Proceso
+                      {slaughter.batch.status === "IN_SLAUGHTER" ? (
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border text-xs font-medium text-amber-400 bg-amber-400/10 border-amber-400/20">
+                          <Clock className="w-3.5 h-3.5" /> En Proceso
                         </span>
                       ) : (
-                        <span className="px-2 py-1 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs font-bold uppercase">
-                          Cerrada
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border text-xs font-medium text-emerald-400 bg-emerald-400/10 border-emerald-400/20">
+                          <CheckCircle2 className="w-3.5 h-3.5" /> Finalizado
                         </span>
                       )}
                     </td>
@@ -123,12 +123,16 @@ export default async function FaenaListPage() {
                       </div>
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <Link 
+                      <Link
                         href={`/operaciones/faena/${slaughter.id}`}
-                        className="inline-flex items-center gap-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
+                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                          slaughter.batch.status === "IN_SLAUGHTER" 
+                            ? "bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20" 
+                            : "bg-zinc-800 text-zinc-300 hover:bg-zinc-700"
+                        }`}
                       >
-                        {slaughter.status === "OPEN" ? "Continuar" : "Ver Detalle"}
-                        <ArrowRight className="w-3 h-3" />
+                        {slaughter.batch.status === "IN_SLAUGHTER" ? "Continuar" : "Ver Detalle"}
+                        <ArrowRight className="w-4 h-4" />
                       </Link>
                     </td>
                   </tr>

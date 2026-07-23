@@ -3,15 +3,12 @@
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 
-import { SlaughterCondition } from "@prisma/client";
-
 export async function initiateFaena(batchId: string) {
   try {
     const slaughter = await prisma.slaughter.create({
       data: {
         batchId,
         date: new Date(),
-        status: "OPEN"
       }
     });
     
@@ -34,24 +31,14 @@ export async function initiateFaena(batchId: string) {
 export async function addFaenaDetail(data: {
   slaughterId: string;
   itemId: string;
-  condition: SlaughterCondition;
   weight: number;
 }) {
   try {
-    // Buscar la última para calcular el sequenceNumber
-    const lastDetail = await prisma.slaughterDetail.findFirst({
-      where: { slaughterId: data.slaughterId },
-      orderBy: { sequenceNumber: "desc" }
-    });
-    const nextSeq = lastDetail ? lastDetail.sequenceNumber + 1 : 1;
-
     const detail = await prisma.slaughterDetail.create({
       data: {
         slaughterId: data.slaughterId,
         itemId: data.itemId,
-        condition: data.condition,
         weight: data.weight,
-        sequenceNumber: nextSeq
       }
     });
     
@@ -78,9 +65,8 @@ export async function closeFaena(slaughterId: string, payload: { totalWeight: nu
       const slaughter = await tx.slaughter.update({
         where: { id: slaughterId },
         data: { 
-          status: "CLOSED",
-          totalWeight: payload.totalWeight,
-          yield: payload.yieldPercent
+          totalCarcassWeight: payload.totalWeight,
+          performance: payload.yieldPercent
         },
         include: { details: true, batch: { include: { closure: { include: { prices: true } } } } }
       });
@@ -98,7 +84,7 @@ export async function closeFaena(slaughterId: string, payload: { totalWeight: nu
         let totalPaidForItem = 0;
         if (slaughter.batch.closure && slaughter.batch.closure.prices) {
           const pricesForItem = slaughter.batch.closure.prices.filter((p: any) => p.itemId === itemId);
-          totalPaidForItem = pricesForItem.reduce((sum: number, p: any) => sum + p.totalValue, 0);
+          totalPaidForItem = pricesForItem.reduce((sum: number, p: any) => sum + (p.liquidWeight * p.pricePerKg), 0);
         }
 
         // Costo Unitario = Total pagado por el artículo en el Romaneo / Kilos Totales al Gancho de ese artículo
@@ -122,14 +108,13 @@ export async function closeFaena(slaughterId: string, payload: { totalWeight: nu
             itemId: itemId,
             type: "IN",
             quantity: totalItemWeight,
-            stockAfter: inventoryLot.currentStock,
-            reference: `Faena Lote #${slaughter.batch.batchNumber}`,
-            description: `Rendimiento de faena al gancho. Costo calculado: ₲ ${unitCost.toFixed(2)}/kg`
+            referenceId: slaughterId,
+            concept: `Faena Lote #${slaughter.batch.batchNumber}`
           }
         });
       }
 
-      // Cambiar estado del lote a CLOSED (ya estaba cerrado en compras, pero por las dudas)
+      // Cambiar estado del lote a CLOSED
       await tx.batch.update({
         where: { id: slaughter.batchId },
         data: { status: "CLOSED" } 

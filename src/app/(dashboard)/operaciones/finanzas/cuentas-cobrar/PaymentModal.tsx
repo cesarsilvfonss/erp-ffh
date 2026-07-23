@@ -78,12 +78,11 @@ export function PaymentModal({
     }
 
     const res = await processPayment(data);
-    
     if (res.success) {
       onClose();
       router.refresh();
     } else {
-      setError(res.error || "Error al procesar el pago");
+      setError((res as any).error || "Error al procesar el pago");
     }
     
     setIsSubmitting(false);

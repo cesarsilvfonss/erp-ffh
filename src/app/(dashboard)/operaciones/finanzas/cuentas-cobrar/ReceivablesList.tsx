@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { Banknote, CheckCircle2, Clock, ChevronDown, ChevronUp } from "lucide-react";

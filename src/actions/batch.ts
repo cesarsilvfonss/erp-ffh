@@ -141,21 +141,23 @@ export async function closeBatch(batchId: string, payload: {
       });
 
       // 2. Crear Closure y los Segmentos
+      const totalHeads = batch.details.reduce((acc, d) => acc + d.quantity, 0);
+
       const closure = await tx.batchClosure.create({
         data: {
           batchId: batchId,
-          discountApplied: true,
-          discountPercentage: payload.discountPercentage,
-          totalNetWeight,
-          totalDiscountWeight,
+          totalHeads,
+          totalGrossWeight: totalNetWeight,
+          discountWeight: totalDiscountWeight,
           totalLiquidWeight,
           totalValue,
+          discountAmount: 0,
+          netValue: totalValue,
           prices: {
             create: payload.prices.map(p => ({
               itemId: p.itemId,
               liquidWeight: p.liquidWeight,
-              pricePerKg: p.pricePerKg,
-              totalValue: p.liquidWeight * p.pricePerKg
+              pricePerKg: p.pricePerKg
             }))
           }
         },
