@@ -173,6 +173,7 @@ export default async function FaenaDetailsPage({ params }: { params: Promise<{ i
               <table className="w-full text-left text-sm relative">
                 <thead className="bg-zinc-950 text-zinc-400 sticky top-0 shadow-md">
                   <tr>
+                    <th className="px-4 py-3 font-medium">#</th>
                     <th className="px-4 py-3 font-medium">Categoría</th>
                     <th className="px-4 py-3 font-medium">Condición</th>
                     <th className="px-4 py-3 font-medium text-right">Peso (KG)</th>
@@ -183,6 +184,7 @@ export default async function FaenaDetailsPage({ params }: { params: Promise<{ i
                 <tbody className="divide-y divide-zinc-800 text-zinc-300">
                   {slaughter.details.map((d) => (
                     <tr key={d.id} className="hover:bg-zinc-800/50">
+                      <td className="px-4 py-2 text-zinc-500 font-mono text-xs">{d.sequenceNumber}</td>
                       <td className="px-4 py-2 font-medium">{d.category}</td>
                       <td className="px-4 py-2">
                         <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${

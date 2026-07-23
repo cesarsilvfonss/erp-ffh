@@ -232,6 +232,7 @@ model SlaughterDetail {
   id                String             @id @default(cuid())
   slaughterId       String
   slaughter         Slaughter          @relation(fields: [slaughterId], references: [id], onDelete: Cascade)
+  sequenceNumber    Int                @default(0) // Secuencial 1, 2, 3...
   category          AnimalCategory
   condition         SlaughterCondition
   weight            Float              // Peso de una media res (0.5 cabeza)

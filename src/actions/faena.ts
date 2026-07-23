@@ -38,12 +38,20 @@ export async function addFaenaDetail(data: {
   weight: number;
 }) {
   try {
+    // Get the current max sequence number for this slaughter
+    const lastDetail = await prisma.slaughterDetail.findFirst({
+      where: { slaughterId: data.slaughterId },
+      orderBy: { sequenceNumber: 'desc' }
+    });
+    const nextSequenceNumber = (lastDetail?.sequenceNumber || 0) + 1;
+
     const detail = await prisma.slaughterDetail.create({
       data: {
         slaughterId: data.slaughterId,
         category: data.category,
         condition: data.condition,
-        weight: data.weight
+        weight: data.weight,
+        sequenceNumber: nextSequenceNumber
       }
     });
     
