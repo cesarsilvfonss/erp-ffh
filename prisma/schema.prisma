@@ -201,25 +201,44 @@ model BatchClosurePrice {
   updatedAt    DateTime       @updatedAt
 }
 
-model Slaughter {
-  id        String   @id @default(cuid())
-  batchId   String   @unique
-  batch     Batch    @relation(fields: [batchId], references: [id], onDelete: Cascade)
-  date      DateTime
+enum SlaughterStatus {
+  OPEN
+  CLOSED
+}
 
-  createdAt DateTime @default(now())
-  details   SlaughterDetail[]
+enum SlaughterCondition {
+  CON_COBERTURA
+  SIN_COBERTURA
+  FLACO
+  GOLPEADO
+}
+
+model Slaughter {
+  id           String          @id @default(cuid())
+  batchId      String          @unique
+  batch        Batch           @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  date         DateTime
+  status       SlaughterStatus @default(OPEN)
+  
+  // Cierre data
+  totalWeight  Float?
+  yield        Float?
+
+  createdAt    DateTime @default(now())
+  details      SlaughterDetail[]
 }
 
 model SlaughterDetail {
-  id                String         @id @default(cuid())
+  id                String             @id @default(cuid())
   slaughterId       String
-  slaughter         Slaughter      @relation(fields: [slaughterId], references: [id], onDelete: Cascade)
+  slaughter         Slaughter          @relation(fields: [slaughterId], references: [id], onDelete: Cascade)
   category          AnimalCategory
-  slaughteredWeight Float          // Peso faenado
-  yield             Float?         // Rendimiento %
-  weightDifference  Float?         // Diferencia peso vivo - faenado
+  condition         SlaughterCondition
+  weight            Float              // Peso de una media res (0.5 cabeza)
+  
+  createdAt DateTime @default(now())
 }
+// Reemplazado arriba
 
 // ========================================
 // 5. Inventario y Costos
