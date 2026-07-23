@@ -179,7 +179,7 @@ export function CloseBatchButton({
                         <div>
                           <h4 className="font-bold text-zinc-200">{cat} <span className="text-zinc-500 font-normal text-sm">({stats.headCount} cabezas)</span></h4>
                           <div className="flex gap-2 mt-1 flex-wrap">
-                            {Object.entries(stats.conditions || {}).map(([cond, cStats]) => (
+                            {Object.entries(stats.conditions || {}).map(([cond, cStats]: [string, any]) => (
                               <span key={cond} className={`text-[10px] font-medium px-1.5 py-0.5 rounded border ${
                                 cond === 'GORDO' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 
                                 cond === 'FLACO' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' : 
