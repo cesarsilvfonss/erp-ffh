@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { CheckCircle, X, Plus, Trash2 } from "lucide-react";
+import { useState, useEffect } from "react";
+import { CheckCircle, X, Plus, Trash2, RefreshCw } from "lucide-react";
 import { closeBatch } from "@/actions/batch";
 
 type PriceSegment = {
@@ -37,8 +37,31 @@ export function CloseBatchButton({
     return acc;
   }, [] as any[]);
 
+  // Agrupar pesos brutos por itemId
+  const grossWeightPerItem = batchDetails.reduce((acc, d) => {
+    acc[d.item.id] = (acc[d.item.id] || 0) + d.weight;
+    return acc;
+  }, {} as Record<string, number>);
+
   const totalDiscountWeight = totalWeight * (discountPercent / 100);
   const totalLiquidWeight = totalWeight - totalDiscountWeight;
+
+  const initializeSegments = () => {
+    const initialSegments = uniqueItems.map((item: any) => ({
+      id: Math.random().toString(36).substr(2, 9),
+      itemId: item.id,
+      liquidWeight: Number((grossWeightPerItem[item.id] * (1 - discountPercent / 100)).toFixed(2)),
+      pricePerKg: 0,
+    }));
+    setSegments(initialSegments);
+  };
+
+  useEffect(() => {
+    if (isOpen && segments.length === 0) {
+      initializeSegments();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen]);
 
   const handleAddSegment = () => {
     setSegments([
@@ -60,6 +83,37 @@ export function CloseBatchButton({
     setSegments(segments.map(s => s.id === id ? { ...s, [field]: value } : s));
   };
 
+  const handleLiquidWeightBlur = (id: string) => {
+    setSegments(prev => {
+      const changedSeg = prev.find(s => s.id === id);
+      if (!changedSeg) return prev;
+
+      const currentAssignedToItem = prev
+        .filter(s => s.itemId === changedSeg.itemId)
+        .reduce((sum, s) => sum + (s.liquidWeight || 0), 0);
+        
+      const targetLiquidWeight = grossWeightPerItem[changedSeg.itemId] * (1 - discountPercent / 100);
+      
+      const deficit = targetLiquidWeight - currentAssignedToItem;
+      
+      // Si falta asignar más de 0.1 kg, autocompletar con una nueva línea
+      if (deficit > 0.1) {
+        const newSegments = [...prev];
+        const index = newSegments.findIndex(s => s.id === id);
+        const newSeg: PriceSegment = {
+          id: Math.random().toString(36).substr(2, 9),
+          itemId: changedSeg.itemId,
+          liquidWeight: Number(deficit.toFixed(2)),
+          pricePerKg: 0 
+        };
+        newSegments.splice(index + 1, 0, newSeg);
+        return newSegments;
+      }
+      
+      return prev;
+    });
+  };
+
   async function handleClose(e: React.FormEvent) {
     e.preventDefault();
     if (segments.length === 0) {
@@ -70,7 +124,7 @@ export function CloseBatchButton({
     const currentLiquidWeight = segments.reduce((sum, seg) => sum + seg.liquidWeight, 0);
     // Allow small rounding differences
     if (Math.abs(currentLiquidWeight - totalLiquidWeight) > 1) {
-      if (!confirm(`La suma de los kilos líquidos asignados (${currentLiquidWeight.toLocaleString()} KG) difiere del total líquido real (${totalLiquidWeight.toLocaleString()} KG). ¿Desea continuar de todos modos?`)) {
+      if (!confirm(`La suma de los kilos líquidos asignados (${currentLiquidWeight.toLocaleString()} KG) difiere del total líquido real esperado (${totalLiquidWeight.toLocaleString()} KG). ¿Desea continuar de todos modos?`)) {
         return;
       }
     }
@@ -127,7 +181,7 @@ export function CloseBatchButton({
             </div>
             
             <form onSubmit={handleClose} className="p-6 space-y-6 overflow-y-auto max-h-[70vh]">
-              <div className="bg-zinc-950 border border-zinc-800 rounded-xl p-4">
+              <div className="bg-zinc-950 border border-zinc-800 rounded-xl p-4 relative">
                 <p className="text-zinc-400 text-sm mb-4">Resumen de Romaneo: Cabezas: {totalHeads} | Bruto: {totalWeight.toLocaleString()} KG</p>
                 <label className="block text-sm font-medium text-zinc-400 mb-1">Desbaste (Merma) %</label>
                 <div className="relative w-1/2">
@@ -147,6 +201,14 @@ export function CloseBatchButton({
                   <span>Descuento: -{totalDiscountWeight.toLocaleString()} KG</span>
                   <span className="text-emerald-500">Total Líquido Esperado: {totalLiquidWeight.toLocaleString()} KG</span>
                 </div>
+                
+                <button
+                  type="button"
+                  onClick={initializeSegments}
+                  className="absolute top-4 right-4 flex items-center gap-1 text-xs text-amber-400 hover:text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 px-3 py-1.5 rounded-lg transition-colors"
+                >
+                  <RefreshCw className="w-3.5 h-3.5" /> Recalcular Kilos
+                </button>
               </div>
 
               <div className="space-y-4">
@@ -157,12 +219,12 @@ export function CloseBatchButton({
                     onClick={handleAddSegment}
                     className="flex items-center gap-1 text-sm text-emerald-400 hover:text-emerald-300 transition-colors"
                   >
-                    <Plus className="w-4 h-4" /> Agregar Precio
+                    <Plus className="w-4 h-4" /> Agregar Línea Manual
                   </button>
                 </div>
 
                 <div className="space-y-3">
-                  {segments.map((seg, index) => (
+                  {segments.map((seg) => (
                     <div key={seg.id} className="flex gap-3 items-start bg-zinc-950 p-3 rounded-xl border border-zinc-800/50">
                       <div className="flex-1">
                         <label className="block text-xs text-zinc-500 mb-1">Categoría</label>
@@ -183,8 +245,9 @@ export function CloseBatchButton({
                           type="number"
                           step="0.1"
                           required
-                          value={seg.liquidWeight || ''}
+                          value={seg.liquidWeight === 0 ? '' : seg.liquidWeight}
                           onChange={(e) => handleSegmentChange(seg.id, 'liquidWeight', parseFloat(e.target.value) || 0)}
+                          onBlur={() => handleLiquidWeightBlur(seg.id)}
                           className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:border-emerald-500/50 text-right"
                         />
                       </div>
@@ -196,7 +259,7 @@ export function CloseBatchButton({
                           type="number"
                           required
                           min="1"
-                          value={seg.pricePerKg || ''}
+                          value={seg.pricePerKg === 0 ? '' : seg.pricePerKg}
                           onChange={(e) => handleSegmentChange(seg.id, 'pricePerKg', parseFloat(e.target.value) || 0)}
                           className="w-full bg-zinc-900 border border-zinc-800 rounded-lg pl-6 pr-3 py-2 text-sm text-zinc-100 focus:outline-none focus:border-emerald-500/50 text-right"
                         />
@@ -214,7 +277,7 @@ export function CloseBatchButton({
                   
                   {segments.length === 0 && (
                     <div className="text-center py-6 text-zinc-500 text-sm">
-                      No hay precios asignados. Usa el botón de arriba para agregar uno.
+                      No hay precios asignados. Usa el botón de recalcular para generarlos automáticamente.
                     </div>
                   )}
                 </div>
@@ -229,7 +292,7 @@ export function CloseBatchButton({
                   <div className="text-right">
                     <span className="block text-xs text-zinc-500 mb-1">Valor Total de Compra</span>
                     <span className="text-xl font-bold font-mono text-emerald-400">
-                      ₲ {totalValue.toLocaleString()}
+                      ₲ {totalValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                     </span>
                   </div>
                 </div>
