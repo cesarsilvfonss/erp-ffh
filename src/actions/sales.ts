@@ -10,7 +10,7 @@ export async function createSale(data: {
   ivaRetention?: number;
   rentRetention?: number;
   netValue?: number;
-  details: { itemId: string; quantityKg: number; salePrice: number }[];
+  details: { itemId: string; inventoryLotId: string; quantityKg: number; salePrice: number }[];
 }) {
   try {
     return await prisma.$transaction(async (tx) => {
@@ -19,12 +19,12 @@ export async function createSale(data: {
       const detailsWithCost = [];
 
       for (const item of data.details) {
-        const inventory = await tx.inventory.findUnique({
-          where: { itemId: item.itemId }
+        const inventoryLot = await tx.inventoryLot.findUnique({
+          where: { id: item.inventoryLotId }
         });
 
-        if (!inventory || inventory.currentStock < item.quantityKg) {
-          throw new Error(`Stock insuficiente para el artículo con ID ${item.itemId}`);
+        if (!inventoryLot || inventoryLot.currentStock < item.quantityKg) {
+          throw new Error(`Stock insuficiente en el lote seleccionado para el artículo con ID ${item.itemId}`);
         }
 
         const itemTotal = item.quantityKg * item.salePrice;
@@ -33,7 +33,7 @@ export async function createSale(data: {
         detailsWithCost.push({
           ...item,
           totalValue: itemTotal,
-          costAtSale: inventory.averageCost // Guardamos el costo actual
+          costAtSale: inventoryLot.unitCost // Guardamos el costo actual del lote
         });
       }
 
@@ -55,6 +55,7 @@ export async function createSale(data: {
           details: {
             create: detailsWithCost.map(d => ({
               itemId: d.itemId,
+              inventoryLotId: d.inventoryLotId,
               quantityKg: d.quantityKg,
               salePrice: d.salePrice,
               totalValue: d.totalValue,
@@ -77,17 +78,18 @@ export async function createSale(data: {
 
       // 4. Actualizar Inventario y crear Movimiento
       for (const detail of data.details) {
-        const inventory = await tx.inventory.update({
-          where: { itemId: detail.itemId },
+        const updatedLot = await tx.inventoryLot.update({
+          where: { id: detail.inventoryLotId },
           data: { currentStock: { decrement: detail.quantityKg } }
         });
 
         await tx.inventoryMovement.create({
           data: {
+            inventoryLotId: detail.inventoryLotId,
             itemId: detail.itemId,
             type: "OUT",
             quantity: detail.quantityKg,
-            stockAfter: inventory.currentStock,
+            stockAfter: updatedLot.currentStock,
             reference: `Venta ${data.invoiceNumber || sale.id}`,
             description: "Venta a cliente"
           }

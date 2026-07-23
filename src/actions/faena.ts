@@ -82,7 +82,7 @@ export async function closeFaena(slaughterId: string, payload: { totalWeight: nu
           totalWeight: payload.totalWeight,
           yield: payload.yieldPercent
         },
-        include: { details: true, batch: true }
+        include: { details: true, batch: { include: { closure: { include: { prices: true } } } } }
       });
 
       // Agrupar peso al gancho por itemId
@@ -94,22 +94,37 @@ export async function closeFaena(slaughterId: string, payload: { totalWeight: nu
 
       // Para cada artículo, actualizar inventario y registrar movimiento
       for (const [itemId, totalItemWeight] of Object.entries(weightPerItem)) {
-        // Buscar inventario actual o crearlo
-        const inventory = await tx.inventory.upsert({
-          where: { itemId },
-          update: { currentStock: { increment: totalItemWeight } },
-          create: { itemId, currentStock: totalItemWeight, averageCost: 0 } // Costo se calcula luego si es necesario
+        // Encontrar cuánto se pagó por este artículo en el romaneo (closure)
+        let totalPaidForItem = 0;
+        if (slaughter.batch.closure && slaughter.batch.closure.prices) {
+          const pricesForItem = slaughter.batch.closure.prices.filter((p: any) => p.itemId === itemId);
+          totalPaidForItem = pricesForItem.reduce((sum: number, p: any) => sum + p.totalValue, 0);
+        }
+
+        // Costo Unitario = Total pagado por el artículo en el Romaneo / Kilos Totales al Gancho de ese artículo
+        const unitCost = totalItemWeight > 0 ? totalPaidForItem / totalItemWeight : 0;
+
+        // Crear InventoryLot para este batch
+        const inventoryLot = await tx.inventoryLot.create({
+          data: {
+            batchId: slaughter.batchId,
+            itemId: itemId,
+            initialStock: totalItemWeight,
+            currentStock: totalItemWeight,
+            unitCost: unitCost
+          }
         });
 
-        // Registrar movimiento de Entrada
+        // Registrar movimiento de Entrada apuntando al lote
         await tx.inventoryMovement.create({
           data: {
-            itemId,
+            inventoryLotId: inventoryLot.id,
+            itemId: itemId,
             type: "IN",
             quantity: totalItemWeight,
-            stockAfter: inventory.currentStock, // currentStock ya está actualizado por upsert
+            stockAfter: inventoryLot.currentStock,
             reference: `Faena Lote #${slaughter.batch.batchNumber}`,
-            description: `Rendimiento de faena al gancho`
+            description: `Rendimiento de faena al gancho. Costo calculado: ₲ ${unitCost.toFixed(2)}/kg`
           }
         });
       }

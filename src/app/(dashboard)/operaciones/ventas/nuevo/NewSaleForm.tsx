@@ -4,16 +4,16 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createSale } from "@/actions/sales";
 import { Plus, Save, Trash2, Users } from "lucide-react";
-import { Client, Item, Inventory } from "@prisma/client";
+import { Client, Item, InventoryLot, Batch } from "@prisma/client";
 
-type InventoryWithItem = Inventory & { item: Item };
+type InventoryLotWithRelations = InventoryLot & { item: Item, batch: Batch | null };
 
 export function NewSaleForm({ 
   clients, 
-  inventoryItems 
+  inventoryLots 
 }: { 
   clients: Client[],
-  inventoryItems: InventoryWithItem[]
+  inventoryLots: InventoryLotWithRelations[]
 }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -22,12 +22,16 @@ export function NewSaleForm({
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [invoiceNumber, setInvoiceNumber] = useState("");
   
-  const [details, setDetails] = useState<{ itemId: string, quantityKg: string, salePrice: string }[]>([
-    { itemId: inventoryItems[0]?.item.id || "", quantityKg: "", salePrice: "" }
+  const uniqueItems = Array.from(new Set(inventoryLots.map(l => l.itemId))).map(id => {
+    return inventoryLots.find(l => l.itemId === id)!.item;
+  });
+
+  const [details, setDetails] = useState<{ itemId: string, inventoryLotId: string, quantityKg: string, salePrice: string }[]>([
+    { itemId: uniqueItems[0]?.id || "", inventoryLotId: "", quantityKg: "", salePrice: "" }
   ]);
 
   const handleAddDetail = () => {
-    setDetails([...details, { itemId: inventoryItems[0]?.item.id || "", quantityKg: "", salePrice: "" }]);
+    setDetails([...details, { itemId: uniqueItems[0]?.id || "", inventoryLotId: "", quantityKg: "", salePrice: "" }]);
   };
 
   const handleRemoveDetail = (index: number) => {
@@ -37,12 +41,16 @@ export function NewSaleForm({
   const handleDetailChange = (index: number, field: string, value: string) => {
     const newDetails = [...details];
     newDetails[index] = { ...newDetails[index], [field]: value };
+    // Si cambia el item, resetear el lote
+    if (field === 'itemId') {
+      newDetails[index].inventoryLotId = "";
+    }
     setDetails(newDetails);
   };
 
-  const getAvailableStock = (itemId: string) => {
-    const inv = inventoryItems.find(i => i.item.id === itemId);
-    return inv ? inv.currentStock : 0;
+  const getAvailableStock = (inventoryLotId: string) => {
+    const lot = inventoryLots.find(l => l.id === inventoryLotId);
+    return lot ? lot.currentStock : 0;
   };
 
   const totalSale = details.reduce((acc, d) => {
@@ -62,8 +70,8 @@ export function NewSaleForm({
 
     // Validar cantidad vs stock
     for (const d of details) {
-      if (!d.itemId || !d.quantityKg || !d.salePrice) {
-        alert("Complete todos los campos de los detalles");
+      if (!d.itemId || !d.inventoryLotId || !d.quantityKg || !d.salePrice) {
+        alert("Complete todos los campos de los detalles (asegúrese de seleccionar un lote).");
         return;
       }
       const qty = parseFloat(d.quantityKg);
@@ -71,9 +79,9 @@ export function NewSaleForm({
         alert("La cantidad debe ser mayor a 0");
         return;
       }
-      const stock = getAvailableStock(d.itemId);
+      const stock = getAvailableStock(d.inventoryLotId);
       if (qty > stock) {
-        alert(`Stock insuficiente. Solo hay ${stock} KG disponibles para el artículo seleccionado.`);
+        alert(`Stock insuficiente en el lote seleccionado. Solo hay ${stock} KG disponibles.`);
         return;
       }
     }
@@ -93,6 +101,7 @@ export function NewSaleForm({
       netValue: netSale,
       details: details.map(d => ({
         itemId: d.itemId,
+        inventoryLotId: d.inventoryLotId,
         quantityKg: parseFloat(d.quantityKg),
         salePrice: parseFloat(d.salePrice)
       }))
@@ -172,74 +181,96 @@ export function NewSaleForm({
         </div>
 
         <div className="space-y-3">
-          {details.map((d, index) => (
-            <div key={index} className="flex flex-col md:flex-row gap-3 bg-zinc-950 p-3 rounded-lg border border-zinc-800/50">
-              <div className="flex-1">
-                <label className="block text-xs font-medium text-zinc-500 mb-1">Artículo</label>
-                <select
-                  value={d.itemId}
-                  onChange={e => handleDetailChange(index, "itemId", e.target.value)}
-                  disabled={loading}
-                  required
-                  className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:border-emerald-500/50"
-                >
-                  {inventoryItems.map(inv => (
-                    <option key={inv.id} value={inv.item.id}>
-                      {inv.item.name} (Disp: {inv.currentStock.toLocaleString()} {inv.item.unit})
-                    </option>
-                  ))}
-                </select>
-              </div>
-              
-              <div className="w-full md:w-32">
-                <label className="block text-xs font-medium text-zinc-500 mb-1">Cant. (KG)</label>
-                <input
-                  type="number"
-                  step="0.1"
-                  min="0.1"
-                  required
-                  disabled={loading}
-                  value={d.quantityKg}
-                  onChange={e => handleDetailChange(index, "quantityKg", e.target.value)}
-                  className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:border-emerald-500/50 text-right"
-                  placeholder="0.0"
-                />
-              </div>
+          {details.map((d, index) => {
+            const lotsForItem = inventoryLots.filter(l => l.itemId === d.itemId);
+            
+            return (
+              <div key={index} className="flex flex-col md:flex-row gap-3 bg-zinc-950 p-3 rounded-lg border border-zinc-800/50">
+                <div className="w-full md:w-48">
+                  <label className="block text-xs font-medium text-zinc-500 mb-1">Artículo</label>
+                  <select
+                    value={d.itemId}
+                    onChange={e => handleDetailChange(index, "itemId", e.target.value)}
+                    disabled={loading}
+                    required
+                    className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:border-emerald-500/50"
+                  >
+                    {uniqueItems.map(item => (
+                      <option key={item.id} value={item.id}>
+                        {item.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
-              <div className="w-full md:w-40 relative">
-                <label className="block text-xs font-medium text-zinc-500 mb-1">Precio Unit.</label>
-                <div className="absolute left-3 top-8 text-xs text-zinc-500 font-bold">₲</div>
-                <input
-                  type="number"
-                  min="1"
-                  required
-                  disabled={loading}
-                  value={d.salePrice}
-                  onChange={e => handleDetailChange(index, "salePrice", e.target.value)}
-                  className="w-full bg-zinc-900 border border-zinc-800 rounded-lg pl-7 pr-3 py-2 text-sm text-zinc-100 focus:outline-none focus:border-emerald-500/50 text-right font-mono"
-                  placeholder="0"
-                />
-              </div>
+                <div className="flex-1">
+                  <label className="block text-xs font-medium text-zinc-500 mb-1">Lote Disponible</label>
+                  <select
+                    value={d.inventoryLotId}
+                    onChange={e => handleDetailChange(index, "inventoryLotId", e.target.value)}
+                    disabled={loading || !d.itemId}
+                    required
+                    className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:border-emerald-500/50"
+                  >
+                    <option value="">Seleccione un lote...</option>
+                    {lotsForItem.map(lot => (
+                      <option key={lot.id} value={lot.id}>
+                        {lot.batch ? `Lote #${lot.batch.batchNumber.toString().padStart(4, '0')}` : 'Manual'} - {lot.currentStock.toLocaleString()} {lot.item.unit} disp.
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                
+                <div className="w-full md:w-32">
+                  <label className="block text-xs font-medium text-zinc-500 mb-1">Cant. (KG)</label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    min="0.1"
+                    required
+                    disabled={loading}
+                    value={d.quantityKg}
+                    onChange={e => handleDetailChange(index, "quantityKg", e.target.value)}
+                    className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:border-emerald-500/50 text-right"
+                    placeholder="0.0"
+                  />
+                </div>
 
-              <div className="w-full md:w-48 pt-1">
-                <label className="block text-xs font-medium text-zinc-500 mb-1">Subtotal</label>
-                <div className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-emerald-400 font-bold text-right font-mono flex items-center justify-end h-[38px]">
-                  ₲ {((parseFloat(d.quantityKg) || 0) * (parseFloat(d.salePrice) || 0)).toLocaleString()}
+                <div className="w-full md:w-40 relative">
+                  <label className="block text-xs font-medium text-zinc-500 mb-1">Precio Unit.</label>
+                  <div className="absolute left-3 top-8 text-xs text-zinc-500 font-bold">₲</div>
+                  <input
+                    type="number"
+                    min="1"
+                    required
+                    disabled={loading}
+                    value={d.salePrice}
+                    onChange={e => handleDetailChange(index, "salePrice", e.target.value)}
+                    className="w-full bg-zinc-900 border border-zinc-800 rounded-lg pl-7 pr-3 py-2 text-sm text-zinc-100 focus:outline-none focus:border-emerald-500/50 text-right font-mono"
+                    placeholder="0"
+                  />
+                </div>
+
+                <div className="w-full md:w-32 pt-1">
+                  <label className="block text-xs font-medium text-zinc-500 mb-1">Subtotal</label>
+                  <div className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-emerald-400 font-bold text-right font-mono flex items-center justify-end h-[38px]">
+                    ₲ {((parseFloat(d.quantityKg) || 0) * (parseFloat(d.salePrice) || 0)).toLocaleString()}
+                  </div>
+                </div>
+
+                <div className="flex items-end pb-[2px]">
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveDetail(index)}
+                    disabled={details.length === 1 || loading}
+                    className="p-2 text-zinc-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors disabled:opacity-50"
+                  >
+                    <Trash2 className="w-5 h-5" />
+                  </button>
                 </div>
               </div>
-
-              <div className="flex items-end pb-[2px]">
-                <button
-                  type="button"
-                  onClick={() => handleRemoveDetail(index)}
-                  disabled={details.length === 1 || loading}
-                  className="p-2 text-zinc-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors disabled:opacity-50"
-                >
-                  <Trash2 className="w-5 h-5" />
-                </button>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 

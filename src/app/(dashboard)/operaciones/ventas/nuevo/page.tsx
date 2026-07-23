@@ -10,9 +10,9 @@ export default async function NewSalePage() {
     orderBy: { legalName: "asc" },
   });
 
-  const inventoryItems = await prisma.inventory.findMany({
+  const inventoryLots = await prisma.inventoryLot.findMany({
     where: { currentStock: { gt: 0 } },
-    include: { item: true },
+    include: { item: true, batch: true },
     orderBy: { item: { name: "asc" } },
   });
 
@@ -31,7 +31,7 @@ export default async function NewSalePage() {
         </div>
       </div>
 
-      <NewSaleForm clients={clients} inventoryItems={inventoryItems} />
+      <NewSaleForm clients={clients} inventoryLots={inventoryLots} />
     </div>
   );
 }

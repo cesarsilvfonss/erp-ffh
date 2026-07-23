@@ -113,7 +113,7 @@ model Item {
   batchDetails       BatchDetail[]
   closurePrices      BatchClosurePrice[]
   slaughterDetails   SlaughterDetail[]
-  inventory          Inventory?
+  inventoryLots      InventoryLot[]
   inventoryMovements InventoryMovement[]
 }
 
@@ -152,10 +152,11 @@ model Batch {
   createdAt        DateTime    @default(now())
   updatedAt        DateTime    @updatedAt
 
-  details   BatchDetail[]
-  closure   BatchClosure?
-  slaughter Slaughter?
-  expenses  Expense[]
+  details       BatchDetail[]
+  closure       BatchClosure?
+  slaughter     Slaughter?
+  expenses      Expense[]
+  inventoryLots InventoryLot[]
 }
 
 model BatchDetail {
@@ -245,18 +246,25 @@ model SlaughterDetail {
   createdAt DateTime @default(now())
 }
 
-// Reemplazado arriba
-
 // ========================================
 // 5. Inventario y Costos
 // ========================================
 
-model Inventory {
+model InventoryLot {
   id           String   @id @default(cuid())
-  itemId       String   @unique
+  batchId      String?  // Opcional por si entra inventario manual
+  batch        Batch?   @relation(fields: [batchId], references: [id])
+  itemId       String
   item         Item     @relation(fields: [itemId], references: [id])
+  
+  initialStock Float    @default(0) // KG con el que entró
   currentStock Float    @default(0) // KG disponibles
-  averageCost  Float    @default(0) // Costo promedio ponderado (opcional)
+  unitCost     Float    @default(0) // Costo calculado al cierre de faena o manual
+  
+  movements    InventoryMovement[]
+  saleDetails  SaleDetail[]
+
+  createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 }
 
@@ -267,15 +275,17 @@ enum MovementType {
 }
 
 model InventoryMovement {
-  id          String       @id @default(cuid())
-  itemId      String
-  item        Item         @relation(fields: [itemId], references: [id])
-  type        MovementType
-  quantity    Float // Cantidad movida (siempre positiva)
-  stockAfter  Float // Stock resultante tras el movimiento
-  date        DateTime     @default(now())
-  reference   String? // Ej: "Faena #12", "Venta #001-001-0000001"
-  description String?
+  id             String       @id @default(cuid())
+  inventoryLotId String
+  inventoryLot   InventoryLot @relation(fields: [inventoryLotId], references: [id], onDelete: Cascade)
+  itemId         String
+  item           Item         @relation(fields: [itemId], references: [id])
+  type           MovementType
+  quantity       Float // Cantidad movida (siempre positiva)
+  stockAfter     Float // Stock resultante tras el movimiento
+  date           DateTime     @default(now())
+  reference      String? // Ej: "Faena #12", "Venta #001-001-0000001"
+  description    String?
 
   createdAt DateTime @default(now())
 }
@@ -310,15 +320,19 @@ model Sale {
 }
 
 model SaleDetail {
-  id         String @id @default(cuid())
-  saleId     String
-  sale       Sale   @relation(fields: [saleId], references: [id], onDelete: Cascade)
-  itemId     String
-  item       Item   @relation(fields: [itemId], references: [id])
-  quantityKg Float
-  salePrice  Float
-  totalValue Float
-  costAtSale Float // Costo del lote en ese momento para calcular margen
+  id             String       @id @default(cuid())
+  saleId         String
+  sale           Sale         @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  inventoryLotId String
+  inventoryLot   InventoryLot @relation(fields: [inventoryLotId], references: [id])
+  itemId         String
+  item           Item         @relation(fields: [itemId], references: [id])
+  quantityKg     Float
+  salePrice      Float
+  totalValue     Float
+  costAtSale     Float // Costo que tenía el lote en ese momento
+
+  createdAt DateTime @default(now())
 }
 
 // ========================================
