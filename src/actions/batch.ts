@@ -79,15 +79,14 @@ export async function deleteBatchDetail(id: string, batchId: string) {
 
 export async function closeBatch(data: {
   batchId: string;
+  discountPercentage: number;
   prices: {
-    VACA?: number;
-    TORO?: number;
-    VAQUILLA?: number;
-    NOVILLO?: number;
-  };
+    category: AnimalCategory;
+    liquidWeight: number;
+    pricePerKg: number;
+  }[];
 }) {
   try {
-    // Usar una transacción para asegurar consistencia
     const result = await prisma.$transaction(async (tx) => {
       const batch = await tx.batch.findUnique({
         where: { id: data.batchId },
@@ -102,26 +101,40 @@ export async function closeBatch(data: {
         throw new Error("El lote no tiene romaneo (pesajes)");
       }
 
-      // Obtener el % de merma configurado (por defecto 4 si no está configurado)
-      const mermaParam = await tx.parameter.findUnique({ where: { key: "MERMA_DEFAULT" } });
-      const mermaPercent = mermaParam ? parseFloat(mermaParam.value) : 4.0;
-
-      // Calcular pesos y valor
+      const mermaPercent = data.discountPercentage;
+      
       let totalNetWeight = 0;
-      let totalValue = 0;
+      const categoryNetWeights: Record<string, number> = {};
 
       batch.details.forEach((detail) => {
         totalNetWeight += detail.netWeight;
-        
-        // Calcular valor por categoría: (Peso Neto - Merma) * Precio
-        const liquidWeight = detail.netWeight * (1 - (mermaPercent / 100));
-        const price = data.prices[detail.category] || 0;
-        
-        totalValue += liquidWeight * price;
+        categoryNetWeights[detail.category] = (categoryNetWeights[detail.category] || 0) + detail.netWeight;
       });
 
       const totalDiscountWeight = totalNetWeight * (mermaPercent / 100);
       const totalLiquidWeight = totalNetWeight - totalDiscountWeight;
+
+      // Validate that the assigned liquid weights per category match exactly the calculated liquid weight for that category
+      let totalValue = 0;
+      
+      for (const [category, netWeight] of Object.entries(categoryNetWeights)) {
+        const expectedLiquidWeight = netWeight * (1 - (mermaPercent / 100));
+        
+        // Sum weights assigned to this category
+        const assignedWeight = data.prices
+          .filter(p => p.category === category)
+          .reduce((acc, curr) => acc + curr.liquidWeight, 0);
+
+        // Allow a tiny margin of floating point error
+        if (Math.abs(expectedLiquidWeight - assignedWeight) > 0.1) {
+          throw new Error(`Los kilos asignados para ${category} (${assignedWeight.toFixed(2)}) no coinciden con los kilos líquidos disponibles (${expectedLiquidWeight.toFixed(2)}).`);
+        }
+      }
+
+      // Calculate total value based on the exact segments
+      data.prices.forEach(segment => {
+        totalValue += segment.liquidWeight * segment.pricePerKg;
+      });
 
       // 1. Cerrar Lote
       await tx.batch.update({
@@ -129,25 +142,28 @@ export async function closeBatch(data: {
         data: { status: "CLOSED" },
       });
 
-      // 2. Crear Closure
+      // 2. Crear Closure y los Segmentos
       const closure = await tx.batchClosure.create({
         data: {
           batchId: data.batchId,
-          priceVaca: data.prices.VACA,
-          priceToro: data.prices.TORO,
-          priceVaquilla: data.prices.VAQUILLA,
-          priceNovillo: data.prices.NOVILLO,
           discountApplied: true,
           discountPercentage: mermaPercent,
           totalNetWeight,
           totalDiscountWeight,
           totalLiquidWeight,
           totalValue,
+          prices: {
+            create: data.prices.map(p => ({
+              category: p.category,
+              liquidWeight: p.liquidWeight,
+              pricePerKg: p.pricePerKg,
+              totalValue: p.liquidWeight * p.pricePerKg
+            }))
+          }
         },
       });
 
       // 3. Crear Cuenta por Pagar (AccountPayable)
-      // Vencimiento a 7 días por defecto si no hay regla explícita
       const dueDate = new Date();
       dueDate.setDate(dueDate.getDate() + 7);
 

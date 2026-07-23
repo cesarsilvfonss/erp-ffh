@@ -16,7 +16,9 @@ export default async function BatchDetailsPage({ params }: { params: Promise<{ i
         provider: true,
         slaughterhouse: true,
         details: { orderBy: { createdAt: "asc" } },
-        closure: true,
+        closure: {
+          include: { prices: true }
+        },
       },
     });
 
@@ -26,8 +28,13 @@ export default async function BatchDetailsPage({ params }: { params: Promise<{ i
     const totalWeight = batch.details.reduce((acc, d) => acc + d.netWeight, 0);
     const isOpen = batch.status === "OPEN";
 
-    // Pre-calculate distinct categories in the batch for the close modal
-    const categoriesInBatch = Array.from(new Set(batch.details.map(d => d.category)));
+    // Pre-calculate category stats for the close modal
+    const categoryStats = batch.details.reduce((acc, d) => {
+      if (!acc[d.category]) acc[d.category] = { netWeight: 0, headCount: 0 };
+      acc[d.category].netWeight += d.netWeight;
+      acc[d.category].headCount += d.quantity;
+      return acc;
+    }, {} as Record<string, { netWeight: number, headCount: number }>);
 
     return (
       <div className="space-y-6">
@@ -51,13 +58,13 @@ export default async function BatchDetailsPage({ params }: { params: Promise<{ i
           </div>
 
           {isOpen ? (
-            <CloseBatchButton 
-              batchId={batch.id} 
-              categories={categoriesInBatch} 
-              totalHeads={totalHeads}
-              totalWeight={totalWeight}
-              disabled={totalHeads === 0}
-            />
+          <CloseBatchButton 
+            batchId={batch.id} 
+            categoryStats={categoryStats} 
+            totalHeads={totalHeads}
+            totalWeight={totalWeight}
+            disabled={totalHeads === 0}
+          />
           ) : (
             <div className="flex items-center gap-2 px-4 py-2 bg-zinc-800/50 text-zinc-300 rounded-lg border border-zinc-700/50">
               <CheckCircle2 className="w-5 h-5 text-emerald-500" />
@@ -128,8 +135,18 @@ export default async function BatchDetailsPage({ params }: { params: Promise<{ i
             
             {batch.closure && (
               <div className="bg-zinc-900/50 border border-emerald-900/50 rounded-xl p-6">
-                <h3 className="text-emerald-400 font-semibold mb-4">Resumen de Liquidación (Cierre)</h3>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-emerald-400 font-semibold">Resumen de Liquidación (Cierre)</h3>
+                  <Link 
+                    href={`/operaciones/lotes/${batch.id}/imprimir`}
+                    target="_blank"
+                    className="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-sm rounded-lg border border-zinc-700 transition-colors flex items-center gap-2"
+                  >
+                    Imprimir Liquidación
+                  </Link>
+                </div>
+
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm mb-6 pb-6 border-b border-emerald-900/30">
                   <div>
                     <p className="text-zinc-500">Peso Bruto</p>
                     <p className="text-zinc-100 font-medium">{batch.closure.totalNetWeight.toLocaleString()} KG</p>
@@ -145,6 +162,32 @@ export default async function BatchDetailsPage({ params }: { params: Promise<{ i
                   <div>
                     <p className="text-zinc-500">Total a Pagar</p>
                     <p className="text-emerald-400 font-bold text-lg">₲ {batch.closure.totalValue.toLocaleString()}</p>
+                  </div>
+                </div>
+
+                <div>
+                  <h4 className="text-sm font-medium text-zinc-300 mb-3">Desglose de Precios por Categoría</h4>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-sm">
+                      <thead className="text-zinc-500 border-b border-zinc-800">
+                        <tr>
+                          <th className="pb-2">Categoría</th>
+                          <th className="pb-2 text-right">KG Líquidos</th>
+                          <th className="pb-2 text-right">Precio / KG</th>
+                          <th className="pb-2 text-right">Subtotal</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-zinc-800/50">
+                        {batch.closure.prices.map(p => (
+                          <tr key={p.id}>
+                            <td className="py-2 text-zinc-300">{p.category}</td>
+                            <td className="py-2 text-right text-emerald-400/80">{p.liquidWeight.toLocaleString()} KG</td>
+                            <td className="py-2 text-right text-zinc-400">₲ {p.pricePerKg.toLocaleString()}</td>
+                            <td className="py-2 text-right font-medium text-emerald-400">₲ {p.totalValue.toLocaleString()}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
                 </div>
               </div>

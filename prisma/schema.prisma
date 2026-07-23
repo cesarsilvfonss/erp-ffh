@@ -169,18 +169,33 @@ model BatchClosure {
   id                 String   @id @default(cuid())
   batchId            String   @unique
   batch              Batch    @relation(fields: [batchId], references: [id], onDelete: Cascade)
-  priceVaca          Float?
-  priceToro          Float?
-  priceVaquilla      Float?
-  priceNovillo       Float?
-  discountApplied    Boolean  @default(true)
-  discountPercentage Float    @default(4.0)
-  totalNetWeight     Float
+  
+  // Resumen de pesos
+  totalNetWeight      Float    // Peso bruto total
+  discountApplied     Boolean  @default(true)
+  discountPercentage  Float    @default(4.0)
   totalDiscountWeight Float
-  totalLiquidWeight  Float
-  totalValue         Float    // Peso liquidado * precios
-
+  totalLiquidWeight   Float
+  
+  // Valor financiero
+  totalValue          Float    // Suma de (kilos líquidos * precio)
+  
+  prices              BatchClosurePrice[]
+  
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model BatchClosurePrice {
+  id           String         @id @default(cuid())
+  closureId    String
+  closure      BatchClosure   @relation(fields: [closureId], references: [id], onDelete: Cascade)
+  category     AnimalCategory
+  liquidWeight Float
+  pricePerKg   Float
+  totalValue   Float
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
 }
 
 model Slaughter {
