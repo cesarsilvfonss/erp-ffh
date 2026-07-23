@@ -6,9 +6,10 @@ import { SlaughterForm } from "./SlaughterForm";
 
 export const dynamic = "force-dynamic";
 
-export default async function FaenaDetailsPage({ params }: { params: { batchId: string } }) {
+export default async function FaenaDetailsPage({ params }: { params: Promise<{ batchId: string }> }) {
+  const { batchId } = await params;
   const batch = await prisma.batch.findUnique({
-    where: { id: params.batchId },
+    where: { id: batchId },
     include: {
       provider: true,
       details: true,
