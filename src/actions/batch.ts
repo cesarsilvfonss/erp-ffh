@@ -15,7 +15,7 @@ export async function createBatch(data: {
       data: {
         date: data.date,
         providerId: data.providerId,
-        slaughterhouseId: data.slaughterhouseId,
+        slaughterhouseId: data.slaughterhouseId?.trim() || null,
         description: data.description,
         status: "OPEN",
       },
