@@ -47,7 +47,14 @@ export default async function ProveedoresPage() {
                 <tr key={prov.id} className="hover:bg-zinc-800/50 transition-colors group">
                   <td className="px-6 py-4 font-mono text-zinc-400">{prov.ruc}</td>
                   <td className="px-6 py-4">
-                    <div className="font-medium text-zinc-100">{prov.legalName}</div>
+                    <div className="font-medium text-zinc-100 flex items-center gap-2">
+                      {prov.legalName}
+                      {prov.isSlaughterhouse && (
+                        <span className="px-1.5 py-0.5 rounded text-[10px] uppercase font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                          Frigorífico
+                        </span>
+                      )}
+                    </div>
                     {prov.tradeName && <div className="text-xs text-zinc-500">{prov.tradeName}</div>}
                     {prov.address && <div className="text-xs text-zinc-600 mt-1">{prov.address}</div>}
                   </td>

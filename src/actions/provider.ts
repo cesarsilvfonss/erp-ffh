@@ -11,6 +11,7 @@ export async function createProvider(data: {
   contact?: string;
   phone?: string;
   email?: string;
+  isSlaughterhouse?: boolean;
 }) {
   try {
     // Generar RUC interno si no se provee
@@ -27,6 +28,7 @@ export async function createProvider(data: {
         contact: data.contact,
         phone: data.phone,
         email: data.email,
+        isSlaughterhouse: data.isSlaughterhouse ?? false,
       },
     });
     

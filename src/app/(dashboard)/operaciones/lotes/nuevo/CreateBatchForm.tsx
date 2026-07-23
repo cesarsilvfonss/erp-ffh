@@ -15,9 +15,10 @@ export function CreateBatchForm({ providers }: { providers: any[] }) {
     const formData = new FormData(e.currentTarget);
     const date = new Date(formData.get("date") as string);
     const providerId = formData.get("providerId") as string;
+    const slaughterhouseId = formData.get("slaughterhouseId") as string;
     const description = formData.get("description") as string;
 
-    const res = await createBatch({ date, providerId, description });
+    const res = await createBatch({ date, providerId, slaughterhouseId, description });
     
     if (res.success && res.data) {
       router.push(`/operaciones/lotes/${res.data.id}`);
@@ -26,6 +27,8 @@ export function CreateBatchForm({ providers }: { providers: any[] }) {
       setLoading(false);
     }
   }
+
+  const slaughterhouses = providers.filter(p => p.isSlaughterhouse);
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -40,18 +43,34 @@ export function CreateBatchForm({ providers }: { providers: any[] }) {
         />
       </div>
 
-      <div>
-        <label className="block text-sm font-medium text-zinc-400 mb-1">Proveedor</label>
-        <select 
-          name="providerId"
-          required
-          className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-4 py-2.5 text-sm text-zinc-100 focus:outline-none focus:border-emerald-500/50 transition-all"
-        >
-          <option value="">Seleccione un proveedor...</option>
-          {providers.map(p => (
-            <option key={p.id} value={p.id}>{p.legalName} (RUC: {p.ruc})</option>
-          ))}
-        </select>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label className="block text-sm font-medium text-zinc-400 mb-1">Proveedor (Ganadero)</label>
+          <select 
+            name="providerId"
+            required
+            className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-4 py-2.5 text-sm text-zinc-100 focus:outline-none focus:border-emerald-500/50 transition-all"
+          >
+            <option value="">Seleccione un proveedor...</option>
+            {providers.map(p => (
+              <option key={p.id} value={p.id}>{p.legalName} (RUC: {p.ruc})</option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-zinc-400 mb-1">Destino de Faena (Frigorífico)</label>
+          <select 
+            name="slaughterhouseId"
+            required
+            className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-4 py-2.5 text-sm text-zinc-100 focus:outline-none focus:border-emerald-500/50 transition-all"
+          >
+            <option value="">Seleccione un frigorífico...</option>
+            {slaughterhouses.map(p => (
+              <option key={p.id} value={p.id}>{p.legalName}</option>
+            ))}
+          </select>
+        </div>
       </div>
 
       <div>

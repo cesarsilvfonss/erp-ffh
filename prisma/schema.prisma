@@ -67,12 +67,14 @@ model Provider {
   address   String?
   phone     String?
   email     String?
-  contact   String?
-  notes     String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  contact          String?
+  notes            String?
+  isSlaughterhouse Boolean  @default(false)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
-  batches         Batch[]
+  batches                 Batch[]
+  batchesAsSlaughterhouse Batch[] @relation("BatchSlaughterhouse")
   expenses        Expense[]
   accountsPayable AccountPayable[]
 }
@@ -137,10 +139,12 @@ model Batch {
   date        DateTime
   providerId  String
   provider    Provider    @relation(fields: [providerId], references: [id])
-  description String?
-  status      BatchStatus @default(OPEN)
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  description      String?
+  status           BatchStatus @default(OPEN)
+  slaughterhouseId String?
+  slaughterhouse   Provider?   @relation("BatchSlaughterhouse", fields: [slaughterhouseId], references: [id])
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
 
   details   BatchDetail[]
   closure   BatchClosure?

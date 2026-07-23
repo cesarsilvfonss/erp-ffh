@@ -22,6 +22,7 @@ export function CreateProviderModal() {
       contact: formData.get("contact") as string,
       phone: formData.get("phone") as string,
       email: formData.get("email") as string,
+      isSlaughterhouse: formData.get("isSlaughterhouse") === "on",
     };
 
     const res = await createProvider(data);
@@ -145,6 +146,18 @@ export function CreateProviderModal() {
                   placeholder="Ej: contacto@sanjuan.com"
                   className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-4 py-2 text-sm text-zinc-100 focus:outline-none focus:border-emerald-500/50"
                 />
+              </div>
+
+              <div className="flex items-center gap-2 mt-4 pt-4 border-t border-zinc-800">
+                <input 
+                  type="checkbox" 
+                  id="isSlaughterhouse"
+                  name="isSlaughterhouse"
+                  className="w-4 h-4 rounded border-zinc-700 bg-zinc-900 text-emerald-500 focus:ring-emerald-500 focus:ring-offset-zinc-900"
+                />
+                <label htmlFor="isSlaughterhouse" className="text-sm font-medium text-emerald-400">
+                  Es Frigorífico (Destino de Faena)
+                </label>
               </div>
 
               <div className="pt-4">

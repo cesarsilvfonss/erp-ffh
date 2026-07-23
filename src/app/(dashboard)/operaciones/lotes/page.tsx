@@ -6,7 +6,7 @@ export const dynamic = "force-dynamic";
 
 export default async function BatchesPage() {
   const batches = await prisma.batch.findMany({
-    include: { provider: true, details: true },
+    include: { provider: true, slaughterhouse: true, details: true },
     orderBy: { createdAt: "desc" },
   });
 
@@ -69,7 +69,14 @@ export default async function BatchesPage() {
                       #{batch.batchNumber.toString().padStart(4, '0')}
                     </td>
                     <td className="px-6 py-4">{new Date(batch.date).toLocaleDateString()}</td>
-                    <td className="px-6 py-4">{batch.provider.legalName}</td>
+                    <td className="px-6 py-4">
+                      <div>{batch.provider.legalName}</div>
+                      {batch.slaughterhouse && (
+                        <div className="text-xs text-zinc-500 flex items-center gap-1 mt-1">
+                          <span className="font-semibold text-emerald-500/80">Destino:</span> {batch.slaughterhouse.legalName}
+                        </div>
+                      )}
+                    </td>
                     <td className="px-6 py-4">{totalHeads}</td>
                     <td className="px-6 py-4">{getStatusBadge(batch.status)}</td>
                     <td className="px-6 py-4 text-right">

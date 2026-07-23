@@ -12,6 +12,7 @@ export default async function BatchDetailsPage({ params }: { params: { id: strin
     where: { id: params.id },
     include: {
       provider: true,
+      slaughterhouse: true,
       details: { orderBy: { createdAt: "asc" } },
       closure: true,
     },
@@ -172,6 +173,12 @@ export default async function BatchDetailsPage({ params }: { params: { id: strin
                 <span className="text-zinc-500">Proveedor</span>
                 <span className="text-zinc-100 text-right max-w-[150px] truncate">{batch.provider.legalName}</span>
               </div>
+              {batch.slaughterhouse && (
+                <div className="flex justify-between border-b border-zinc-800 pb-2">
+                  <span className="text-zinc-500">Frigorífico</span>
+                  <span className="text-zinc-100 text-right max-w-[150px] truncate">{batch.slaughterhouse.legalName}</span>
+                </div>
+              )}
               {batch.description && (
                 <div className="pt-2">
                   <span className="text-zinc-500 block mb-1">Observaciones</span>

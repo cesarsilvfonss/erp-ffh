@@ -7,6 +7,7 @@ import { revalidatePath } from "next/cache";
 export async function createBatch(data: {
   date: Date;
   providerId: string;
+  slaughterhouseId?: string;
   description?: string;
 }) {
   try {
@@ -14,6 +15,7 @@ export async function createBatch(data: {
       data: {
         date: data.date,
         providerId: data.providerId,
+        slaughterhouseId: data.slaughterhouseId,
         description: data.description,
         status: "OPEN",
       },
