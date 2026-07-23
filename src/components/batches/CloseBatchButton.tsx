@@ -46,7 +46,7 @@ export function CloseBatchButton({
   useEffect(() => {
     if (isOpen) {
       const initial: PriceSegment[] = [];
-      Object.entries(categoryStats).forEach(([cat, stats]) => {
+      Object.entries(categoryStats).forEach(([cat, stats]: [string, any]) => {
         const expectedLiquid = stats.netWeight * (1 - (merma / 100));
         initial.push({ 
           id: Math.random().toString(), 
@@ -91,7 +91,7 @@ export function CloseBatchButton({
   const isValid = useMemo(() => {
     if (segments.some(s => s.pricePerKg <= 0)) return false;
     
-    for (const [cat, stats] of Object.entries(categoryStats)) {
+    for (const [cat, stats] of Object.entries(categoryStats) as [string, any][]) {
       const expectedLiquid = stats.netWeight * (1 - (merma / 100));
       const assigned = segments.filter(s => s.category === cat).reduce((acc, s) => acc + s.liquidWeight, 0);
       if (Math.abs(expectedLiquid - assigned) > 0.1) return false;
@@ -165,9 +165,8 @@ export function CloseBatchButton({
                 </div>
               </div>
 
-              {/* DESGLOSE POR CATEGORIA */}
               <div className="space-y-6">
-                {Object.entries(categoryStats).map(([cat, stats]) => {
+                {Object.entries(categoryStats).map(([cat, stats]: [string, any]) => {
                   const expectedLiquid = stats.netWeight * (1 - (merma / 100));
                   const catSegments = segments.filter(s => s.category === cat);
                   const assigned = catSegments.reduce((acc, s) => acc + s.liquidWeight, 0);
