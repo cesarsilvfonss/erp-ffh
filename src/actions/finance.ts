@@ -46,7 +46,7 @@ export async function processPayment(data: {
           accountReceivableId: data.receivableId,
           amount: data.amount,
           method: data.method as any,
-          date: new Date(data.date),
+          date: new Date(data.date + "T12:00:00Z"),
           reference: data.reference || null,
           bankAccountId: data.method === "CASH" || data.method === "TRANSFER" ? data.bankAccountId : null,
         }
@@ -57,7 +57,7 @@ export async function processPayment(data: {
         const transaction = await tx.transaction.create({
           data: {
             bankAccountId: data.bankAccountId,
-            date: new Date(data.date),
+            date: new Date(data.date + "T12:00:00Z"),
             type: "INCOME",
             amount: data.amount,
             reference: data.reference,
@@ -80,8 +80,8 @@ export async function processPayment(data: {
             paymentId: payment.id,
             bankName: data.checkBank,
             checkNumber: data.checkNumber,
-            issueDate: new Date(data.issueDate!),
-            dueDate: new Date(data.dueDate!),
+            issueDate: new Date(data.issueDate + "T12:00:00Z"),
+            dueDate: new Date(data.dueDate + "T12:00:00Z"),
             amount: data.amount,
             status: "IN_PORTFOLIO"
           }
@@ -133,7 +133,7 @@ export async function createLoan(data: {
         data: {
           providerId: data.providerId,
           bankAccountId: data.bankAccountId,
-          date: new Date(data.date),
+          date: new Date(data.date + "T12:00:00Z"),
           principalAmount: data.principalAmount,
           totalAmount: totalQuotas,
           interestRate,
@@ -145,7 +145,7 @@ export async function createLoan(data: {
       await tx.transaction.create({
         data: {
           bankAccountId: data.bankAccountId,
-          date: new Date(data.date),
+          date: new Date(data.date + "T12:00:00Z"),
           type: "INCOME",
           amount: data.principalAmount,
           concept: `Préstamo Adquirido: ${data.concept}`,
@@ -162,7 +162,7 @@ export async function createLoan(data: {
             type: "LOAN",
             providerId: data.providerId,
             amount: quota.amount,
-            dueDate: new Date(quota.date),
+            dueDate: new Date(quota.date + "T12:00:00Z"),
             status: "PENDING"
           }
         });
@@ -262,7 +262,7 @@ export async function processPayablePayment(data: {
         await tx.transaction.create({
           data: {
             bankAccountId: data.bankAccountId,
-            date: new Date(data.date),
+            date: new Date(data.date + "T12:00:00Z"),
             type: "EXPENSE",
             amount: data.amount,
             reference: data.reference,

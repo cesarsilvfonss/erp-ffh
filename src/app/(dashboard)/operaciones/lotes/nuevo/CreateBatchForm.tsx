@@ -13,7 +13,7 @@ export function CreateBatchForm({ providers }: { providers: any[] }) {
     setLoading(true);
 
     const formData = new FormData(e.currentTarget);
-    const date = new Date(formData.get("date") as string);
+    const date = new Date((formData.get("date") as string) + "T12:00:00Z");
     const providerId = formData.get("providerId") as string;
     const slaughterhouseId = formData.get("slaughterhouseId") as string;
     const description = formData.get("description") as string;

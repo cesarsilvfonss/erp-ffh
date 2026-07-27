@@ -46,7 +46,7 @@ export async function createSale(data: {
       const sale = await tx.sale.create({
         data: {
           clientId: data.clientId,
-          date: new Date(data.date),
+          date: new Date(data.date + "T12:00:00Z"),
           invoiceNumber: data.invoiceNumber || null,
           status: "CONFIRMED",
           totalValue,
@@ -73,7 +73,7 @@ export async function createSale(data: {
           saleId: sale.id,
           clientId: data.clientId,
           amount: totalValue, // Generado por el valor bruto
-          dueDate: new Date(data.date), // O sumar días según término del cliente
+          dueDate: new Date(data.date + "T12:00:00Z"), // O sumar días según término del cliente
           status: "PENDING"
         }
       });

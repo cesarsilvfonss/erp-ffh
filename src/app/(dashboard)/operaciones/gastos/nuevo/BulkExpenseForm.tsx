@@ -55,7 +55,7 @@ export function BulkExpenseForm({
     setLoading(true);
     const res = await createBulkExpenses({
       batchId,
-      date: new Date(date),
+      date: new Date(date + "T12:00:00Z"),
       expenses: rows.map(r => ({
         categoryId: r.categoryId,
         providerId: r.providerId,
