@@ -1,9 +1,17 @@
 import { prisma } from "@/lib/prisma";
 import { DashboardUI } from "./DashboardUI";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/auth";
+import { redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
+  const session = await getServerSession(authOptions);
+  
+  if (session?.user?.role === "WEIGHER") {
+    redirect("/operaciones/faena");
+  }
   // 1. Saldo Bancario
   const bankAccounts = await prisma.bankAccount.findMany({
     include: { transactions: true }
