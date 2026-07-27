@@ -4,9 +4,11 @@ import { useState } from "react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { Clock, CheckCircle2, AlertCircle, HandCoins } from "lucide-react";
+import { PayablePaymentModal } from "./PayablePaymentModal";
 
 export function PayableList({ payables, bankAccounts }: { payables: any[], bankAccounts: any[] }) {
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedPayable, setSelectedPayable] = useState<any>(null);
 
   const filtered = payables.filter(p => 
     p.provider.legalName.toLowerCase().includes(searchTerm.toLowerCase())
@@ -80,10 +82,10 @@ export function PayableList({ payables, bankAccounts }: { payables: any[], bankA
                     {payable.status === "PAID" && <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"><CheckCircle2 className="w-3.5 h-3.5" /> Pagado</span>}
                   </td>
                   <td className="px-6 py-4 text-right">
-                    {saldo > 0 && (
+                    {payable.status !== "PAID" && (
                       <button 
                         className="text-emerald-400 hover:text-emerald-300 text-sm font-medium hover:underline"
-                        onClick={() => alert("Función de Registrar Pago de Cuentas por Pagar en desarrollo (próximo paso)")}
+                        onClick={() => setSelectedPayable(payable)}
                       >
                         Pagar
                       </button>
@@ -103,6 +105,13 @@ export function PayableList({ payables, bankAccounts }: { payables: any[], bankA
           </tbody>
         </table>
       </div>
+
+      <PayablePaymentModal 
+        isOpen={!!selectedPayable}
+        onClose={() => setSelectedPayable(null)}
+        payable={selectedPayable}
+        banks={bankAccounts}
+      />
     </div>
   );
 }

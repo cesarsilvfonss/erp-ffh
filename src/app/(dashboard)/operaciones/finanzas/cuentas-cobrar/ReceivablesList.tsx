@@ -9,13 +9,28 @@ import { PaymentModal } from "./PaymentModal";
 export function ReceivablesList({ initialReceivables, banks }: { initialReceivables: any[], banks: any[] }) {
   const [receivables, setReceivables] = useState(initialReceivables);
   const [selectedReceivable, setSelectedReceivable] = useState<any>(null);
+  const [searchTerm, setSearchTerm] = useState("");
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const formatCurrency = (val: number) => new Intl.NumberFormat('es-PY', { style: 'currency', currency: 'PYG' }).format(val);
 
+  const filteredReceivables = receivables.filter(rec => 
+    rec.client.legalName.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    (rec.client.ruc && rec.client.ruc.includes(searchTerm))
+  );
+
   return (
     <>
       <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl overflow-hidden">
+        <div className="p-4 border-b border-zinc-800 flex items-center justify-between">
+          <input
+            type="text"
+            placeholder="Buscar por cliente o RUC..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full max-w-md bg-zinc-950 border border-zinc-800 rounded-lg px-4 py-2 text-sm text-zinc-100 focus:outline-none focus:border-emerald-500/50"
+          />
+        </div>
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead className="bg-zinc-900 border-b border-zinc-800 text-zinc-400">
@@ -31,7 +46,7 @@ export function ReceivablesList({ initialReceivables, banks }: { initialReceivab
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-800">
-              {receivables.map((rec) => {
+              {filteredReceivables.map((rec) => {
                 const balance = rec.amount - rec.paidAmount;
                 const isExpanded = expandedId === rec.id;
 
@@ -49,7 +64,8 @@ export function ReceivablesList({ initialReceivables, banks }: { initialReceivab
                         )}
                       </td>
                       <td className="px-6 py-4">
-                        <div className="font-medium text-zinc-200">{rec.client.ruc || rec.client.legalName}</div>
+                        <div className="font-medium text-zinc-200">{rec.client.legalName}</div>
+                        {rec.client.ruc && <div className="text-xs text-zinc-400 mt-1">RUC: {rec.client.ruc}</div>}
                         {rec.sale?.invoiceNumber && (
                           <div className="text-xs text-zinc-500 mt-1">Fac: {rec.sale.invoiceNumber}</div>
                         )}

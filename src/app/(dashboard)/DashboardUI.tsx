@@ -7,12 +7,14 @@ export function DashboardUI({
   bankBalance, 
   inventoryValue, 
   salesThisMonth, 
-  receivables 
+  receivables,
+  payables
 }: {
   bankBalance: number;
   inventoryValue: number;
   salesThisMonth: number;
   receivables: number;
+  payables: number;
 }) {
   const formatCurrency = (value: number) => {
     return value.toLocaleString("es-PY", { style: "currency", currency: "PYG", maximumFractionDigits: 0 });
@@ -22,7 +24,8 @@ export function DashboardUI({
     { label: "Saldo Bancario", value: formatCurrency(bankBalance), icon: CircleDollarSign, trend: "Actualizado", trendColor: "text-emerald-400" },
     { label: "Valor Inventario", value: formatCurrency(inventoryValue), icon: Beef, trend: "Costo total en stock", trendColor: "text-emerald-400" },
     { label: "Ventas del Mes", value: formatCurrency(salesThisMonth), icon: TrendingUp, trend: "Mes en curso", trendColor: "text-emerald-400" },
-    { label: "Cuentas por Cobrar", value: formatCurrency(receivables), icon: Users, trend: "Saldo pendiente", trendColor: "text-amber-400" },
+    { label: "Cuentas por Cobrar", value: formatCurrency(receivables), icon: Users, trend: "Saldo pendiente a cobrar", trendColor: "text-emerald-400" },
+    { label: "Cuentas por Pagar", value: formatCurrency(payables), icon: Users, trend: "Deudas pendientes a pagar", trendColor: "text-amber-400" },
   ];
 
   return (
@@ -37,7 +40,7 @@ export function DashboardUI({
         </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         {metrics.map((metric, index) => (
           <motion.div
             key={metric.label}

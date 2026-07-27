@@ -39,12 +39,19 @@ export default async function DashboardPage() {
   });
   const receivables = receivablesRecords.reduce((acc, rec) => acc + (rec.amount - rec.paidAmount), 0);
 
+  // 5. Cuentas por Pagar
+  const payablesRecords = await prisma.accountPayable.findMany({
+    where: { status: { not: 'PAID' } }
+  });
+  const payables = payablesRecords.reduce((acc, pay) => acc + (pay.amount - pay.paidAmount), 0);
+
   return (
     <DashboardUI 
       bankBalance={bankBalance}
       inventoryValue={inventoryValue}
       salesThisMonth={salesThisMonth}
       receivables={receivables}
+      payables={payables}
     />
   );
 }

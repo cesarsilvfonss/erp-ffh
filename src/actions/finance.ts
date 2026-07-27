@@ -238,3 +238,72 @@ export async function processCheckDeposit(checkId: string, bankAccountId: string
     return { success: false, error: error.message };
   }
 }
+
+export async function processPayablePayment(data: {
+  payableId: string;
+  amount: number;
+  method: string;
+  date: string;
+  reference?: string;
+  bankAccountId?: string;
+}) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return { success: false, error: "No autenticado" };
+    }
+
+    return await prisma.$transaction(async (tx) => {
+      const payable = await tx.accountPayable.findUnique({
+        where: { id: data.payableId },
+        include: { provider: true }
+      });
+
+      if (!payable) throw new Error("Cuenta por pagar no encontrada");
+
+      const balance = payable.amount - payable.paidAmount;
+      if (data.amount > balance) {
+        throw new Error("El monto del pago supera el saldo pendiente");
+      }
+
+      const newPaidAmount = payable.paidAmount + data.amount;
+      const newStatus = newPaidAmount >= payable.amount ? "PAID" : "PARTIAL";
+
+      // 1. Create the Bank Transaction (OUTCOME) if CASH or TRANSFER
+      if ((data.method === "CASH" || data.method === "TRANSFER") && data.bankAccountId) {
+        await tx.transaction.create({
+          data: {
+            bankAccountId: data.bankAccountId,
+            date: new Date(data.date),
+            type: "EXPENSE",
+            amount: data.amount,
+            reference: data.reference,
+            concept: `Pago a Proveedor/Acreedor: ${payable.provider.legalName}`,
+            userId: session.user.id
+          }
+        });
+        
+        // Decrease bank balance
+        await tx.bankAccount.update({
+          where: { id: data.bankAccountId },
+          data: { initialBalance: { decrement: data.amount } }
+        });
+      }
+
+      // 2. Update the Payable record
+      await tx.accountPayable.update({
+        where: { id: data.payableId },
+        data: {
+          paidAmount: newPaidAmount,
+          status: newStatus
+        }
+      });
+
+      revalidatePath("/operaciones/finanzas/cuentas-pagar");
+      return { success: true };
+    });
+  } catch (error: any) {
+    console.error("Error processing payable payment:", error);
+    return { success: false, error: error.message };
+  }
+}
