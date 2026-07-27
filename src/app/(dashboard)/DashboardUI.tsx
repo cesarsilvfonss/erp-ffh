@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import { Beef, CircleDollarSign, TrendingUp, Users } from "lucide-react";
+import Link from "next/link";
 
 export function DashboardUI({ 
   bankBalance, 
@@ -21,11 +22,11 @@ export function DashboardUI({
   };
 
   const metrics = [
-    { label: "Saldo Bancario", value: formatCurrency(bankBalance), icon: CircleDollarSign, trend: "Actualizado", trendColor: "text-emerald-400" },
-    { label: "Valor Inventario", value: formatCurrency(inventoryValue), icon: Beef, trend: "Costo total en stock", trendColor: "text-emerald-400" },
-    { label: "Ventas del Mes", value: formatCurrency(salesThisMonth), icon: TrendingUp, trend: "Mes en curso", trendColor: "text-emerald-400" },
-    { label: "Cuentas por Cobrar", value: formatCurrency(receivables), icon: Users, trend: "Saldo pendiente a cobrar", trendColor: "text-emerald-400" },
-    { label: "Cuentas por Pagar", value: formatCurrency(payables), icon: Users, trend: "Deudas pendientes a pagar", trendColor: "text-amber-400" },
+    { label: "Saldo Bancario", value: formatCurrency(bankBalance), icon: CircleDollarSign, trend: "Actualizado", trendColor: "text-emerald-400", href: "/operaciones/finanzas/bancos" },
+    { label: "Valor Inventario", value: formatCurrency(inventoryValue), icon: Beef, trend: "Costo total en stock", trendColor: "text-emerald-400", href: "/inventario" },
+    { label: "Ventas del Mes", value: formatCurrency(salesThisMonth), icon: TrendingUp, trend: "Mes en curso", trendColor: "text-emerald-400", href: "/operaciones/ventas" },
+    { label: "Cuentas por Cobrar", value: formatCurrency(receivables), icon: Users, trend: "Saldo pendiente a cobrar", trendColor: "text-emerald-400", href: "/operaciones/finanzas/cuentas-cobrar" },
+    { label: "Cuentas por Pagar", value: formatCurrency(payables), icon: Users, trend: "Deudas pendientes a pagar", trendColor: "text-amber-400", href: "/operaciones/finanzas/cuentas-pagar" },
   ];
 
   return (
@@ -42,26 +43,27 @@ export function DashboardUI({
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         {metrics.map((metric, index) => (
-          <motion.div
-            key={metric.label}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, delay: index * 0.1 }}
-            className="bg-zinc-900/50 border border-zinc-800 p-5 rounded-xl hover:bg-zinc-900 transition-colors group"
-          >
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-zinc-400 text-sm font-medium">{metric.label}</p>
-                <h3 className="text-xl font-bold text-zinc-100 mt-2">{metric.value}</h3>
+          <Link key={metric.label} href={metric.href} className="block">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: index * 0.1 }}
+              className="bg-zinc-900/50 border border-zinc-800 p-5 rounded-xl hover:bg-zinc-800 transition-colors group cursor-pointer h-full"
+            >
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-zinc-400 text-sm font-medium">{metric.label}</p>
+                  <h3 className="text-xl font-bold text-zinc-100 mt-2">{metric.value}</h3>
+                </div>
+                <div className="p-2 bg-zinc-800 rounded-lg group-hover:bg-zinc-700 transition-colors">
+                  <metric.icon className="w-5 h-5 text-emerald-400" />
+                </div>
               </div>
-              <div className="p-2 bg-zinc-800 rounded-lg group-hover:bg-zinc-700 transition-colors">
-                <metric.icon className="w-5 h-5 text-emerald-400" />
-              </div>
-            </div>
-            <p className={`text-xs mt-4 font-medium ${metric.trendColor}`}>
-              {metric.trend}
-            </p>
-          </motion.div>
+              <p className={`text-xs mt-4 font-medium ${metric.trendColor}`}>
+                {metric.trend}
+              </p>
+            </motion.div>
+          </Link>
         ))}
       </div>
 
