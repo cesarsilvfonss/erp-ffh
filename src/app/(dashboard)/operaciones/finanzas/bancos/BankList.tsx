@@ -63,7 +63,12 @@ export function BankList({ initialBanks, userRole }: { initialBanks: any[], user
                       )}
                     </td>
                     <td className="px-6 py-4 text-right font-bold text-emerald-400">
-                      {formatCurrency(bank.initialBalance, bank.currency.code)}
+                      {formatCurrency(
+                        bank.transactions.reduce((acc: number, tx: any) => {
+                          return tx.type === 'INCOME' ? acc + tx.amount : acc - tx.amount;
+                        }, bank.initialBalance), 
+                        bank.currency.code
+                      )}
                     </td>
                   </tr>
                   {isExpanded && (

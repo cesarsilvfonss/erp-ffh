@@ -71,12 +71,6 @@ export async function processPayment(data: {
           where: { id: payment.id },
           data: { transactionId: transaction.id }
         });
-
-        // Update bank balance
-        await tx.bankAccount.update({
-          where: { id: data.bankAccountId },
-          data: { initialBalance: { increment: data.amount } } // initialBalance acts as current balance in this simple model, or maybe we just calculate it, but since we don't have currentBalance field, we increment initialBalance for now. Wait! I'll just leave it or create a new field later if needed. Usually balance is calculated from transactions. I will just rely on transactions.
-        });
       }
 
       // 3. If it's a CHECK, store it in portfolio
@@ -224,12 +218,6 @@ export async function processCheckDeposit(checkId: string, bankAccountId: string
         }
       });
 
-      // 3. Update Bank Balance
-      await tx.bankAccount.update({
-        where: { id: bankAccountId },
-        data: { initialBalance: { increment: check.amount } }
-      });
-
       revalidatePath("/operaciones/finanzas/cheques");
       return { success: true };
     });
@@ -281,12 +269,6 @@ export async function processPayablePayment(data: {
             concept: `Pago a Proveedor/Acreedor: ${payable.provider.legalName}`,
             userId: session.user.id
           }
-        });
-        
-        // Decrease bank balance
-        await tx.bankAccount.update({
-          where: { id: data.bankAccountId },
-          data: { initialBalance: { decrement: data.amount } }
         });
       }
 
