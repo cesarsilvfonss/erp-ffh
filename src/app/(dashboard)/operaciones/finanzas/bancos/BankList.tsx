@@ -3,11 +3,13 @@
 import React, { useState } from "react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { Building2, ChevronDown, ChevronUp, ArrowUpRight, ArrowDownRight, RefreshCcw } from "lucide-react";
+import { Building2, ChevronDown, ChevronUp, ArrowUpRight, ArrowDownRight, RefreshCcw, Settings2 } from "lucide-react";
+import { BalanceAdjustmentModal } from "@/components/finance/BalanceAdjustmentModal";
 
-export function BankList({ initialBanks }: { initialBanks: any[] }) {
+export function BankList({ initialBanks, userRole }: { initialBanks: any[], userRole?: string }) {
   const [banks, setBanks] = useState(initialBanks);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [adjustingBank, setAdjustingBank] = useState<any>(null);
 
   const formatCurrency = (val: number, code: string) => 
     new Intl.NumberFormat('es-PY', { style: 'currency', currency: code }).format(val);
@@ -68,7 +70,18 @@ export function BankList({ initialBanks }: { initialBanks: any[] }) {
                     <tr>
                       <td colSpan={6} className="px-6 py-4 bg-zinc-900/30">
                         <div className="pl-8 border-l-2 border-zinc-800 space-y-3">
-                          <h4 className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Últimos Movimientos (Top 10)</h4>
+                          <div className="flex items-center justify-between">
+                            <h4 className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Últimos Movimientos (Top 10)</h4>
+                            {userRole === "ADMIN" && (
+                              <button
+                                onClick={() => setAdjustingBank(bank)}
+                                className="flex items-center gap-1.5 text-xs text-emerald-400 hover:text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/20 px-2 py-1.5 rounded transition-colors"
+                              >
+                                <Settings2 className="w-3.5 h-3.5" />
+                                Ajustar Saldo
+                              </button>
+                            )}
+                          </div>
                           
                           {bank.transactions.length === 0 ? (
                             <p className="text-sm text-zinc-500 italic">No hay movimientos registrados.</p>
@@ -116,6 +129,22 @@ export function BankList({ initialBanks }: { initialBanks: any[] }) {
           </tbody>
         </table>
       </div>
+
+      {adjustingBank && (
+        <BalanceAdjustmentModal
+          bankAccountId={adjustingBank.id}
+          bankName={adjustingBank.bankName + " - " + adjustingBank.accountName}
+          currentBalance={
+            adjustingBank.transactions.reduce((acc: number, tx: any) => {
+              return tx.type === 'INCOME' ? acc + tx.amount : acc - tx.amount;
+            }, adjustingBank.initialBalance)
+          }
+          onClose={() => {
+            setAdjustingBank(null);
+            window.location.reload();
+          }}
+        />
+      )}
     </div>
   );
 }

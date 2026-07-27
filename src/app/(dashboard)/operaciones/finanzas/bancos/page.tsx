@@ -45,7 +45,7 @@ export default async function BancosPage() {
         <BankForm currencies={currencies} />
       </div>
 
-      <BankList initialBanks={banks} />
+      <BankList initialBanks={banks} userRole={session.user.role} />
     </div>
   );
 }
