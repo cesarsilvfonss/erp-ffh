@@ -16,7 +16,7 @@ export async function createBatch(data: {
         date: data.date,
         providerId: data.providerId,
         slaughterhouseId: data.slaughterhouseId?.trim() || null,
-        description: data.description,
+        description: data.description?.toUpperCase(),
         status: "OPEN",
       },
     });

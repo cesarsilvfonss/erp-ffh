@@ -10,8 +10,8 @@ export async function createExpenseCategory(data: {
   try {
     const category = await prisma.expenseCategory.create({
       data: {
-        name: data.name,
-        description: data.description,
+        name: data.name.toUpperCase(),
+        description: data.description?.toUpperCase(),
       },
     });
     

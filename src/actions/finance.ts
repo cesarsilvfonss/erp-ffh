@@ -143,7 +143,7 @@ export async function createLoan(data: {
           principalAmount: data.principalAmount,
           totalAmount: totalQuotas,
           interestRate,
-          concept: data.concept
+          concept: data.concept.toUpperCase()
         }
       });
 

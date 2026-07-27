@@ -23,7 +23,7 @@ export async function createBulkExpenses(data: {
             batchId: data.batchId,
             categoryId: exp.categoryId,
             providerId: exp.providerId,
-            description: exp.description,
+            description: exp.description.toUpperCase(),
             amount: exp.amount
           }
         })

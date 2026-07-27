@@ -13,9 +13,9 @@ export async function createBankAccount(data: {
   try {
     const bank = await prisma.bankAccount.create({
       data: {
-        bankName: data.bankName,
-        accountName: data.accountName,
-        accountNumber: data.accountNumber,
+        bankName: data.bankName.toUpperCase(),
+        accountName: data.accountName.toUpperCase(),
+        accountNumber: data.accountNumber.toUpperCase(),
         currencyId: data.currencyId,
         initialBalance: data.initialBalance,
         status: true

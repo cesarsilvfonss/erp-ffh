@@ -30,10 +30,10 @@ export async function createItem(data: {
     const item = await prisma.item.create({
       data: {
         code: newCode,
-        name: data.name,
-        category: data.category,
+        name: data.name.toUpperCase(),
+        category: data.category.toUpperCase(),
         unit: data.unit,
-        description: data.description,
+        description: data.description?.toUpperCase(),
         isSlaughterable: data.isSlaughterable || false,
       },
     });

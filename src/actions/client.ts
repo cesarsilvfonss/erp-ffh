@@ -18,16 +18,16 @@ export async function createClient(data: {
   try {
     const client = await prisma.client.create({
       data: {
-        legalName: data.legalName,
+        legalName: data.legalName.toUpperCase(),
         ruc: data.ruc || null,
-        tradeName: data.tradeName,
+        tradeName: data.tradeName?.toUpperCase(),
         phone: data.phone,
         email: data.email,
-        contact: data.contact,
+        contact: data.contact?.toUpperCase(),
         paymentTermDays: data.paymentTermDays,
         isIvaRetainer: data.isIvaRetainer || false,
         isRentRetainer: data.isRentRetainer || false,
-        notes: data.notes,
+        notes: data.notes?.toUpperCase(),
       },
     });
     
@@ -56,16 +56,16 @@ export async function updateClient(id: string, data: {
     const client = await prisma.client.update({
       where: { id },
       data: {
-        legalName: data.legalName,
+        legalName: data.legalName.toUpperCase(),
         ruc: data.ruc || null,
-        tradeName: data.tradeName,
+        tradeName: data.tradeName?.toUpperCase(),
         phone: data.phone,
         email: data.email,
-        contact: data.contact,
+        contact: data.contact?.toUpperCase(),
         paymentTermDays: data.paymentTermDays,
         isIvaRetainer: data.isIvaRetainer || false,
         isRentRetainer: data.isRentRetainer || false,
-        notes: data.notes,
+        notes: data.notes?.toUpperCase(),
       },
     });
     
