@@ -49,7 +49,7 @@ export function PayablePaymentModal({
     if (res.success) {
       onClose();
     } else {
-      alert("Error: " + res.error);
+      alert("Error: " + ('error' in res ? res.error : "Error desconocido"));
     }
   };
 

@@ -73,7 +73,7 @@ export function CreateLoanForm({
     if (res.success) {
       router.push("/operaciones/finanzas");
     } else {
-      alert("Error: " + res.error);
+      alert("Error: " + ('error' in res ? res.error : "Error desconocido"));
       setLoading(false);
     }
   };
