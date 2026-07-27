@@ -10,10 +10,12 @@ type InventoryLotWithRelations = InventoryLot & { item: Item, batch: Batch | nul
 
 export function NewSaleForm({ 
   clients, 
-  inventoryLots 
+  inventoryLots,
+  isAdmin = false
 }: { 
   clients: Client[],
-  inventoryLots: InventoryLotWithRelations[]
+  inventoryLots: InventoryLotWithRelations[],
+  isAdmin?: boolean
 }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -21,6 +23,7 @@ export function NewSaleForm({
   const [clientId, setClientId] = useState(clients[0]?.id || "");
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [invoiceNumber, setInvoiceNumber] = useState("");
+  const [isInitialSale, setIsInitialSale] = useState(false);
   
   const uniqueItems = Array.from(new Set(inventoryLots.map(l => l.itemId))).map(id => {
     return inventoryLots.find(l => l.itemId === id)!.item;
@@ -99,6 +102,7 @@ export function NewSaleForm({
       ivaRetention,
       rentRetention,
       netValue: netSale,
+      isInitialSale: isAdmin ? isInitialSale : false,
       details: details.map(d => ({
         itemId: d.itemId,
         inventoryLotId: d.inventoryLotId,
@@ -302,6 +306,22 @@ export function NewSaleForm({
               ₲ {netSale.toLocaleString(undefined, { maximumFractionDigits: 0 })}
             </span>
           </div>
+
+          {isAdmin && (
+            <div className="mt-4 flex items-center gap-2 px-4">
+              <input
+                type="checkbox"
+                id="isInitialSale"
+                checked={isInitialSale}
+                onChange={(e) => setIsInitialSale(e.target.checked)}
+                disabled={loading}
+                className="w-4 h-4 bg-zinc-900 border-zinc-700 rounded text-emerald-500 focus:ring-emerald-500 focus:ring-offset-zinc-950"
+              />
+              <label htmlFor="isInitialSale" className="text-sm font-medium text-zinc-400 select-none cursor-pointer">
+                Marcar como Venta Inicial (Omitir Rentabilidad)
+              </label>
+            </div>
+          )}
         </div>
 
         <button

@@ -3,9 +3,16 @@ import { NewSaleForm } from "./NewSaleForm";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/auth";
+import { RoleEnum } from "@prisma/client";
+
 export const dynamic = "force-dynamic";
 
 export default async function NewSalePage() {
+  const session = await getServerSession(authOptions);
+  const isAdmin = session?.user?.role === RoleEnum.ADMIN;
+
   const clients = await prisma.client.findMany({
     orderBy: { legalName: "asc" },
   });
@@ -31,7 +38,7 @@ export default async function NewSalePage() {
         </div>
       </div>
 
-      <NewSaleForm clients={clients} inventoryLots={inventoryLots} />
+      <NewSaleForm clients={clients} inventoryLots={inventoryLots} isAdmin={isAdmin} />
     </div>
   );
 }

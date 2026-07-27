@@ -98,7 +98,7 @@ export function PaymentModal({
               Registrar Pago
             </h2>
             <p className="text-sm text-zinc-400 mt-1">
-              Cliente: <strong className="text-zinc-200">{receivable.client.tradeName || receivable.client.legalName}</strong>
+              Cliente: <strong className="text-zinc-200">{receivable.client.ruc || receivable.client.legalName}</strong>
             </p>
           </div>
           <button 

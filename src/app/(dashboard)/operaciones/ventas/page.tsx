@@ -10,6 +10,7 @@ export default async function VentasPage() {
     include: {
       client: true,
       details: true,
+      accountsReceivable: true,
     }
   });
 
@@ -52,6 +53,8 @@ export default async function VentasPage() {
                 <th className="px-6 py-3 font-medium text-right">Bruto (₲)</th>
                 <th className="px-6 py-3 font-medium text-right">Retenciones (₲)</th>
                 <th className="px-6 py-3 font-medium text-right">A Cobrar (₲)</th>
+                <th className="px-6 py-3 font-medium text-right text-emerald-400">Pagado (₲)</th>
+                <th className="px-6 py-3 font-medium text-right text-rose-400">Saldo (₲)</th>
                 <th className="px-6 py-3 font-medium text-right">Costo (₲)</th>
                 <th className="px-6 py-3 font-medium text-right">Rentabilidad</th>
                 <th className="px-6 py-3 font-medium text-center">Acciones</th>
@@ -63,6 +66,10 @@ export default async function VentasPage() {
                 const costOfSale = sale.details.reduce((acc, d) => acc + (d.costAtSale * d.quantityKg), 0);
                 const profitability = sale.netValue - costOfSale;
                 
+                const account = sale.accountsReceivable?.[0];
+                const paidAmount = account?.paidAmount || 0;
+                const balance = account ? (account.amount - paidAmount) : sale.totalValue;
+
                 return (
                   <tr key={sale.id} className="hover:bg-zinc-800/50 transition-colors">
                     <td className="px-6 py-4 whitespace-nowrap text-zinc-400">
@@ -72,8 +79,8 @@ export default async function VentasPage() {
                       {sale.invoiceNumber || "Sin comprobante"}
                     </td>
                     <td className="px-6 py-4">
-                      <div className="font-medium text-zinc-200">{sale.client.legalName}</div>
-                      <div className="text-xs text-zinc-500">RUC: {sale.client.tradeName || "N/A"}</div>
+                      <div className="font-medium text-zinc-100">{sale.client.legalName}</div>
+                      <div className="text-xs text-zinc-500">RUC: {sale.client.ruc || "N/A"}</div>
                     </td>
                     <td className="px-6 py-4">
                       <span className={`px-2 py-1 rounded-md text-[10px] uppercase font-bold border ${
@@ -90,8 +97,14 @@ export default async function VentasPage() {
                     <td className="px-6 py-4 text-right font-medium text-rose-400/80">
                       {totalRetentions > 0 ? `-${totalRetentions.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : '0'}
                     </td>
-                    <td className="px-6 py-4 text-right font-bold text-emerald-400">
+                    <td className="px-6 py-4 text-right font-bold text-zinc-100">
                       {sale.netValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                    </td>
+                    <td className="px-6 py-4 text-right font-medium text-emerald-400">
+                      {paidAmount.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                    </td>
+                    <td className="px-6 py-4 text-right font-bold text-rose-400">
+                      {balance.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                     </td>
                     <td className="px-6 py-4 text-right font-mono text-zinc-400">
                       {costOfSale.toLocaleString(undefined, { maximumFractionDigits: 0 })}

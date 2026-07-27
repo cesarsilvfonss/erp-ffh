@@ -10,6 +10,7 @@ export async function createSale(data: {
   ivaRetention?: number;
   rentRetention?: number;
   netValue?: number;
+  isInitialSale?: boolean;
   details: { itemId: string; inventoryLotId: string; quantityKg: number; salePrice: number }[];
 }) {
   try {
@@ -33,7 +34,7 @@ export async function createSale(data: {
         detailsWithCost.push({
           ...item,
           totalValue: itemTotal,
-          costAtSale: inventoryLot.unitCost // Guardamos el costo actual del lote
+          costAtSale: data.isInitialSale ? item.salePrice : inventoryLot.unitCost
         });
       }
 
@@ -52,6 +53,7 @@ export async function createSale(data: {
           ivaRetention,
           rentRetention,
           netValue,
+          isInitialSale: data.isInitialSale || false,
           details: {
             create: detailsWithCost.map(d => ({
               itemId: d.itemId,

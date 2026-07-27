@@ -51,7 +51,7 @@ export function CheckList({ initialChecks, banks }: { initialChecks: any[], bank
           </thead>
           <tbody className="divide-y divide-zinc-800">
             {checks.map((check) => {
-              const clientName = check.payment.accountReceivable.client.tradeName || check.payment.accountReceivable.client.legalName;
+              const clientName = check.payment.accountReceivable.client.ruc || check.payment.accountReceivable.client.legalName;
               
               return (
                 <tr key={check.id} className="hover:bg-zinc-800/50 transition-colors">

@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 
 export async function createClient(data: {
   legalName: string;
+  ruc?: string;
   tradeName?: string;
   phone?: string;
   email?: string;
@@ -18,6 +19,7 @@ export async function createClient(data: {
     const client = await prisma.client.create({
       data: {
         legalName: data.legalName,
+        ruc: data.ruc || null,
         tradeName: data.tradeName,
         phone: data.phone,
         email: data.email,

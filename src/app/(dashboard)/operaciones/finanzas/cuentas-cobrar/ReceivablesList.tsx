@@ -49,7 +49,7 @@ export function ReceivablesList({ initialReceivables, banks }: { initialReceivab
                         )}
                       </td>
                       <td className="px-6 py-4">
-                        <div className="font-medium text-zinc-200">{rec.client.tradeName || rec.client.legalName}</div>
+                        <div className="font-medium text-zinc-200">{rec.client.ruc || rec.client.legalName}</div>
                         {rec.sale?.invoiceNumber && (
                           <div className="text-xs text-zinc-500 mt-1">Fac: {rec.sale.invoiceNumber}</div>
                         )}

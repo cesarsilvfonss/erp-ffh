@@ -7,6 +7,13 @@ export const dynamic = "force-dynamic";
 export default async function ClientesPage() {
   const clientes = await prisma.client.findMany({
     orderBy: { createdAt: "desc" },
+    include: {
+      accountsReceivable: {
+        where: {
+          status: { not: "PAID" }
+        }
+      }
+    }
   });
 
   return (
@@ -38,6 +45,7 @@ export default async function ClientesPage() {
                 <th className="px-6 py-3 font-medium">Cliente</th>
                 <th className="px-6 py-3 font-medium">Contacto</th>
                 <th className="px-6 py-3 font-medium">Plazo Crédito</th>
+                <th className="px-6 py-3 font-medium text-right text-rose-400">Saldo Pendiente</th>
                 <th className="px-6 py-3 font-medium text-right">Acciones</th>
               </tr>
             </thead>
@@ -46,7 +54,7 @@ export default async function ClientesPage() {
                 <tr key={cli.id} className="hover:bg-zinc-800/50 transition-colors group">
                   <td className="px-6 py-4">
                     <div className="font-medium text-zinc-100">{cli.legalName}</div>
-                    {cli.tradeName && <div className="text-xs text-zinc-500">{cli.tradeName}</div>}
+                    {cli.ruc && <div className="text-xs text-zinc-500">{cli.ruc}</div>}
                   </td>
                   <td className="px-6 py-4">
                     {cli.contact && <div className="font-medium">{cli.contact}</div>}
@@ -75,6 +83,14 @@ export default async function ClientesPage() {
                         {cli.paymentTermDays} días
                       </span>
                     )}
+                  </td>
+                  <td className="px-6 py-4 text-right font-bold text-rose-400">
+                    {(() => {
+                      const totalBalance = cli.accountsReceivable?.reduce((acc: number, rec: any) => acc + (rec.amount - rec.paidAmount), 0) || 0;
+                      return totalBalance > 0 
+                        ? totalBalance.toLocaleString("es-PY", { style: "currency", currency: "PYG" })
+                        : <span className="text-zinc-500 font-normal">Al día</span>;
+                    })()}
                   </td>
                   <td className="px-6 py-4 text-right space-x-2">
                     <button className="p-1.5 text-zinc-400 hover:text-cyan-400 rounded-md hover:bg-cyan-400/10 transition-colors">

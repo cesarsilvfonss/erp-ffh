@@ -14,7 +14,7 @@ export function CreateClientModal() {
     const formData = new FormData(e.currentTarget);
     const data = {
       legalName: formData.get("legalName") as string,
-      tradeName: formData.get("tradeName") as string,
+      ruc: formData.get("ruc") as string,
       contact: formData.get("contact") as string,
       phone: formData.get("phone") as string,
       email: formData.get("email") as string,
@@ -71,7 +71,7 @@ export function CreateClientModal() {
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-zinc-400 mb-1">RUC / Cédula</label>
                   <input 
-                    name="tradeName"
+                    name="ruc"
                     className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-4 py-2.5 text-sm text-zinc-100 focus:outline-none focus:border-emerald-500/50"
                   />
                 </div>

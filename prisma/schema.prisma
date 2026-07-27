@@ -83,6 +83,7 @@ model Provider {
 
 model Client {
   id              String   @id @default(cuid())
+  ruc             String?  @unique
   legalName       String
   tradeName       String?
   phone           String?
@@ -295,6 +296,7 @@ model Sale {
   ivaRetention  Float      @default(0)
   rentRetention Float      @default(0)
   netValue      Float      @default(0)
+  isInitialSale Boolean    @default(false)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
