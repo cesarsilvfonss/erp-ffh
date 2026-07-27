@@ -22,8 +22,8 @@ export default async function NewExpensePage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-zinc-100">Registrar Gastos Masivos</h1>
-        <p className="text-zinc-400 text-sm mt-1">Carga múltiples gastos asociados a un mismo lote (fletes, comisiones, honorarios).</p>
+        <h1 className="text-2xl font-bold text-zinc-100">Registrar Gastos</h1>
+        <p className="text-zinc-400 text-sm mt-1">Carga uno o múltiples gastos generales o asociados a un lote (fletes, comisiones, honorarios).</p>
       </div>
 
       <BulkExpenseForm 

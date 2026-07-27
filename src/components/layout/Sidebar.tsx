@@ -23,22 +23,37 @@ import { useSession, signOut } from "next-auth/react";
 import { useState } from "react";
 import { ChangePasswordModal } from "./ChangePasswordModal";
 
-const allMenuItems = [
-  { icon: LayoutDashboard, label: "Dashboard", href: "/", roles: ["ADMIN", "ADMINISTRATION"] },
-  { icon: Store, label: "Compras (Lotes)", href: "/operaciones/lotes", roles: ["ADMIN", "ADMINISTRATION", "WEIGHER"] },
-  { icon: Factory, label: "Faena", href: "/operaciones/faena", roles: ["ADMIN", "ADMINISTRATION", "WEIGHER"] },
-  { icon: CircleDollarSign, label: "Ventas", href: "/operaciones/ventas", roles: ["ADMIN", "ADMINISTRATION"] },
-  { icon: Beef, label: "Inventario", href: "/inventario", roles: ["ADMIN", "ADMINISTRATION"] },
-  { icon: ArrowRightLeft, label: "Finanzas (Bancos)", href: "/operaciones/finanzas/bancos", roles: ["ADMIN", "ADMINISTRATION"] },
-  { icon: Wallet, label: "Cuentas por Cobrar", href: "/operaciones/finanzas/cuentas-cobrar", roles: ["ADMIN", "ADMINISTRATION"] },
-  { icon: Wallet, label: "Cuentas por Pagar", href: "/operaciones/finanzas/cuentas-pagar", roles: ["ADMIN", "ADMINISTRATION"] },
-  { icon: CircleDollarSign, label: "Cartera Cheques", href: "/operaciones/finanzas/cheques", roles: ["ADMIN", "ADMINISTRATION"] },
-  { icon: Landmark, label: "Préstamos", href: "/operaciones/finanzas/prestamos", roles: ["ADMIN"] },
-  { icon: Users, label: "Clientes", href: "/terceros/clientes", roles: ["ADMIN", "ADMINISTRATION"] },
-  { icon: Users, label: "Proveedores", href: "/terceros/proveedores", roles: ["ADMIN", "ADMINISTRATION"] },
-  { icon: Settings, label: "Gastos", href: "/configuracion/gastos", roles: ["ADMIN", "ADMINISTRATION"] },
-  { icon: Settings, label: "Artículos", href: "/configuracion/articulos", roles: ["ADMIN", "ADMINISTRATION"] },
-  { icon: UserCog, label: "Usuarios", href: "/configuracion/usuarios", roles: ["ADMIN"] },
+const menuCategories = [
+  {
+    title: "OPERATIVO",
+    items: [
+      { icon: Store, label: "Compras (Lotes)", href: "/operaciones/lotes", roles: ["ADMIN", "ADMINISTRATION", "WEIGHER"] },
+      { icon: Factory, label: "Faena", href: "/operaciones/faena", roles: ["ADMIN", "ADMINISTRATION", "WEIGHER"] },
+      { icon: Beef, label: "Inventario", href: "/inventario", roles: ["ADMIN", "ADMINISTRATION"] },
+      { icon: CircleDollarSign, label: "Ventas", href: "/operaciones/ventas", roles: ["ADMIN", "ADMINISTRATION"] },
+      { icon: CircleDollarSign, label: "Gastos", href: "/operaciones/gastos", roles: ["ADMIN", "ADMINISTRATION", "WEIGHER"] },
+    ]
+  },
+  {
+    title: "FINANZAS",
+    items: [
+      { icon: ArrowRightLeft, label: "Bancos y Cajas", href: "/operaciones/finanzas/bancos", roles: ["ADMIN", "ADMINISTRATION"] },
+      { icon: Wallet, label: "Cuentas por Cobrar", href: "/operaciones/finanzas/cuentas-cobrar", roles: ["ADMIN", "ADMINISTRATION"] },
+      { icon: Wallet, label: "Cuentas por Pagar", href: "/operaciones/finanzas/cuentas-pagar", roles: ["ADMIN", "ADMINISTRATION"] },
+      { icon: CircleDollarSign, label: "Cartera Cheques", href: "/operaciones/finanzas/cheques", roles: ["ADMIN", "ADMINISTRATION"] },
+      { icon: Landmark, label: "Préstamos", href: "/operaciones/finanzas/prestamos", roles: ["ADMIN"] },
+    ]
+  },
+  {
+    title: "DEFINICIONES",
+    items: [
+      { icon: Users, label: "Clientes", href: "/terceros/clientes", roles: ["ADMIN", "ADMINISTRATION"] },
+      { icon: Users, label: "Proveedores", href: "/terceros/proveedores", roles: ["ADMIN", "ADMINISTRATION"] },
+      { icon: Settings, label: "Cat. Gastos", href: "/configuracion/gastos", roles: ["ADMIN", "ADMINISTRATION"] },
+      { icon: Settings, label: "Artículos", href: "/configuracion/articulos", roles: ["ADMIN", "ADMINISTRATION"] },
+      { icon: UserCog, label: "Usuarios", href: "/configuracion/usuarios", roles: ["ADMIN"] },
+    ]
+  }
 ];
 
 export function Sidebar() {
@@ -48,8 +63,6 @@ export function Sidebar() {
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
 
   const userRole = session?.user?.role || "WEIGHER";
-  
-  const menuItems = allMenuItems.filter(item => item.roles.includes(userRole));
 
   const sidebarClasses = `
     fixed inset-y-0 left-0 z-50 w-64 bg-zinc-950 border-r border-zinc-800 flex flex-col h-full transform transition-transform duration-300 ease-in-out
@@ -80,26 +93,55 @@ export function Sidebar() {
           </button>
         </div>
 
-      <nav className="flex-1 px-4 space-y-1 overflow-y-auto">
-        {menuItems.map((item) => {
-          const isActive = pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href));
-          
+      <nav className="flex-1 px-4 space-y-4 overflow-y-auto pb-4">
+        {/* Dashboard siempre visible arriba si tiene rol */}
+        {["ADMIN", "ADMINISTRATION"].includes(userRole) && (
+          <Link href="/" className="block relative">
+            {pathname === "/" && (
+              <motion.div
+                layoutId="sidebar-active"
+                className="absolute inset-0 bg-zinc-800/50 rounded-lg border border-zinc-700/50"
+                transition={{ type: "spring", stiffness: 300, damping: 30 }}
+              />
+            )}
+            <div className={`relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+              pathname === "/" ? "text-emerald-400" : "text-zinc-400 hover:text-zinc-100 hover:bg-zinc-900/50"
+            }`}>
+              <LayoutDashboard className="w-5 h-5" />
+              Dashboard
+            </div>
+          </Link>
+        )}
+
+        {menuCategories.map((category) => {
+          const allowedItems = category.items.filter(item => item.roles.includes(userRole));
+          if (allowedItems.length === 0) return null;
+
           return (
-            <Link key={item.href} href={item.href} className="block relative">
-              {isActive && (
-                <motion.div
-                  layoutId="sidebar-active"
-                  className="absolute inset-0 bg-zinc-800/50 rounded-lg border border-zinc-700/50"
-                  transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                />
-              )}
-              <div className={`relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                isActive ? "text-emerald-400" : "text-zinc-400 hover:text-zinc-100 hover:bg-zinc-900/50"
-              }`}>
-                <item.icon className="w-5 h-5" />
-                {item.label}
-              </div>
-            </Link>
+            <div key={category.title} className="space-y-1">
+              <h3 className="px-3 text-xs font-semibold text-zinc-500 tracking-wider mb-2">{category.title}</h3>
+              {allowedItems.map((item) => {
+                const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
+                
+                return (
+                  <Link key={item.href} href={item.href} className="block relative">
+                    {isActive && (
+                      <motion.div
+                        layoutId="sidebar-active"
+                        className="absolute inset-0 bg-zinc-800/50 rounded-lg border border-zinc-700/50"
+                        transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                      />
+                    )}
+                    <div className={`relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                      isActive ? "text-emerald-400" : "text-zinc-400 hover:text-zinc-100 hover:bg-zinc-900/50"
+                    }`}>
+                      <item.icon className="w-5 h-5" />
+                      {item.label}
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
           );
         })}
       </nav>

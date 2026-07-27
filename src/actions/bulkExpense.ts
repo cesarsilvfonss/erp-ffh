@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 
 export async function createBulkExpenses(data: {
-  batchId: string;
+  batchId?: string;
   date: Date;
   expenses: {
     categoryId: string;
@@ -20,7 +20,7 @@ export async function createBulkExpenses(data: {
         prisma.expense.create({
           data: {
             date: data.date,
-            batchId: data.batchId,
+            batchId: data.batchId || null,
             categoryId: exp.categoryId,
             providerId: exp.providerId,
             description: exp.description.toUpperCase(),
@@ -31,7 +31,9 @@ export async function createBulkExpenses(data: {
     );
     
     revalidatePath("/operaciones/gastos");
-    revalidatePath(`/operaciones/lotes/${data.batchId}`);
+    if (data.batchId) {
+      revalidatePath(`/operaciones/lotes/${data.batchId}`);
+    }
     
     return { success: true, count: result.length };
   } catch (error: any) {

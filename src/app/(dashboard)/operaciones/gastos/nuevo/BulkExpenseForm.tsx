@@ -48,7 +48,6 @@ export function BulkExpenseForm({
 
   const handleSubmit = async () => {
     // Validations
-    if (!batchId) return alert("Debe seleccionar un lote.");
     if (rows.some(r => !r.categoryId || !r.providerId || r.amount <= 0)) {
       return alert("Complete todos los campos requeridos en las filas de gastos (Monto debe ser mayor a 0).");
     }
@@ -79,7 +78,7 @@ export function BulkExpenseForm({
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 pb-6 border-b border-zinc-800">
         <div>
-          <label className="block text-sm font-medium text-zinc-400 mb-2">Lote Asociado *</label>
+          <label className="block text-sm font-medium text-zinc-400 mb-2">Lote Asociado (Opcional)</label>
           <select 
             value={batchId}
             onChange={e => setBatchId(e.target.value)}
