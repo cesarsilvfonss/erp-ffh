@@ -112,6 +112,77 @@ export async function processPayment(data: {
   }
 }
 
+export async function createLoan(data: {
+  providerId: string;
+  bankAccountId: string;
+  date: string;
+  principalAmount: number;
+  concept: string;
+  quotas: { date: string; amount: number }[];
+}) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return { success: false, error: "No autenticado" };
+    }
+
+    if (!data.providerId || !data.bankAccountId || data.quotas.length === 0) {
+      throw new Error("Faltan datos requeridos para el préstamo");
+    }
+
+    const totalQuotas = data.quotas.reduce((acc, q) => acc + q.amount, 0);
+    const interestRate = ((totalQuotas - data.principalAmount) / data.principalAmount) * 100;
+
+    return await prisma.$transaction(async (tx) => {
+      // 1. Create the Loan record
+      const loan = await tx.loan.create({
+        data: {
+          providerId: data.providerId,
+          bankAccountId: data.bankAccountId,
+          date: new Date(data.date),
+          principalAmount: data.principalAmount,
+          totalAmount: totalQuotas,
+          interestRate,
+          concept: data.concept
+        }
+      });
+
+      // 2. Create the Bank Transaction (INCOME)
+      await tx.transaction.create({
+        data: {
+          bankAccountId: data.bankAccountId,
+          date: new Date(data.date),
+          type: "INCOME",
+          amount: data.principalAmount,
+          concept: `Préstamo Adquirido: ${data.concept}`,
+          userId: session.user.id
+        }
+      });
+
+      // 3. Create the Accounts Payable (Installments)
+      for (let i = 0; i < data.quotas.length; i++) {
+        const quota = data.quotas[i];
+        await tx.accountPayable.create({
+          data: {
+            sourceId: loan.id,
+            type: "LOAN",
+            providerId: data.providerId,
+            amount: quota.amount,
+            dueDate: new Date(quota.date),
+            status: "PENDING"
+          }
+        });
+      }
+
+      revalidatePath("/operaciones/finanzas");
+      return { success: true };
+    });
+  } catch (error: any) {
+    console.error("Error creating loan:", error);
+    return { success: false, error: error.message };
+  }
+}
+
 export async function processCheckDeposit(checkId: string, bankAccountId: string) {
   try {
     const session = await getServerSession(authOptions);

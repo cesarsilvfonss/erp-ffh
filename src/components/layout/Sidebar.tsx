@@ -14,7 +14,8 @@ import {
   Factory,
   X,
   LogOut,
-  UserCog
+  UserCog,
+  Landmark
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useMobileMenu } from "./MobileMenuContext";
@@ -30,7 +31,9 @@ const allMenuItems = [
   { icon: Beef, label: "Inventario", href: "/inventario", roles: ["ADMIN", "ADMINISTRATION"] },
   { icon: ArrowRightLeft, label: "Finanzas (Bancos)", href: "/operaciones/finanzas/bancos", roles: ["ADMIN", "ADMINISTRATION"] },
   { icon: Wallet, label: "Cuentas por Cobrar", href: "/operaciones/finanzas/cuentas-cobrar", roles: ["ADMIN", "ADMINISTRATION"] },
+  { icon: Wallet, label: "Cuentas por Pagar", href: "/operaciones/finanzas/cuentas-pagar", roles: ["ADMIN", "ADMINISTRATION"] },
   { icon: CircleDollarSign, label: "Cartera Cheques", href: "/operaciones/finanzas/cheques", roles: ["ADMIN", "ADMINISTRATION"] },
+  { icon: Landmark, label: "Préstamos", href: "/operaciones/finanzas/prestamos", roles: ["ADMIN"] },
   { icon: Users, label: "Clientes", href: "/terceros/clientes", roles: ["ADMIN", "ADMINISTRATION"] },
   { icon: Users, label: "Proveedores", href: "/terceros/proveedores", roles: ["ADMIN", "ADMINISTRATION"] },
   { icon: Settings, label: "Gastos", href: "/configuracion/gastos", roles: ["ADMIN", "ADMINISTRATION"] },

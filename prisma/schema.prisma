@@ -19,6 +19,7 @@ enum RoleEnum {
   WEIGHER
 }
 
+
 model User {
   id        String   @id @default(cuid())
   name      String
@@ -79,6 +80,7 @@ model Provider {
   batchesAsSlaughterhouse Batch[]          @relation("BatchSlaughterhouse")
   expenses                Expense[]
   accountsPayable         AccountPayable[]
+  loans                   Loan[]
 }
 
 model Client {
@@ -351,6 +353,7 @@ model BankAccount {
   transactions  Transaction[]
   payments      Payment[]     // Pagos directos depositados en cuenta
   depositedChecks Check[]    @relation("CheckDepositBank")
+  loans         Loan[]
 }
 
 enum AccountStatus {
@@ -436,6 +439,7 @@ model Check {
 enum PayableType {
   BATCH_PURCHASE
   EXPENSE
+  LOAN
 }
 
 model AccountPayable {
@@ -499,4 +503,18 @@ model Transaction {
   createdAt DateTime @default(now())
   
   payment   Payment?
+}
+
+model Loan {
+  id              String   @id @default(cuid())
+  providerId      String
+  provider        Provider @relation(fields: [providerId], references: [id])
+  bankAccountId   String
+  bankAccount     BankAccount @relation(fields: [bankAccountId], references: [id])
+  date            DateTime
+  principalAmount Float
+  interestRate    Float
+  totalAmount     Float
+  concept         String
+  createdAt       DateTime @default(now())
 }
