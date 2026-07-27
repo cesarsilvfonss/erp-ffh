@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { Search, Edit2, Trash2, Mail, Phone } from "lucide-react";
 import { CreateClientModal } from "@/components/clients/CreateClientModal";
+import { ClientActions } from "@/components/clients/ClientActions";
 
 export const dynamic = "force-dynamic";
 
@@ -93,12 +94,7 @@ export default async function ClientesPage() {
                     })()}
                   </td>
                   <td className="px-6 py-4 text-right space-x-2">
-                    <button className="p-1.5 text-zinc-400 hover:text-cyan-400 rounded-md hover:bg-cyan-400/10 transition-colors">
-                      <Edit2 className="w-4 h-4" />
-                    </button>
-                    <button className="p-1.5 text-zinc-400 hover:text-red-400 rounded-md hover:bg-red-400/10 transition-colors">
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    <ClientActions client={cli} />
                   </td>
                 </tr>
               ))}
