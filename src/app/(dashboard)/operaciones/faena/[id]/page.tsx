@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, CheckCircle2 } from "lucide-react";
 import { FaenaForm } from "./FaenaForm";
+import { MenudenciaForm } from "./MenudenciaForm";
 import { CloseFaenaButton } from "@/components/faena/CloseFaenaButton";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
@@ -95,22 +96,25 @@ export default async function FaenaDetailsPage({ params }: { params: Promise<{ i
           </div>
         </div>
 
-        {isOpen ? (
-          <CloseFaenaButton 
-            slaughterId={slaughter.id} 
-            totalBoughtHeads={totalBoughtHeads}
-            totalFaenaHeads={totalFaenaHeads}
-            disabled={slaughter.details.length === 0}
-          />
-        ) : (
-          <div className="flex flex-col md:flex-row gap-2">
-            <div className="flex items-center gap-2 px-4 py-2 bg-zinc-800/50 text-zinc-300 rounded-lg border border-zinc-700/50">
-              <CheckCircle2 className="w-5 h-5 text-emerald-500" />
-              <span className="font-medium">Faena Cerrada</span>
+        <div className="flex items-center gap-3">
+          <MenudenciaForm batchId={slaughter.batchId} maxQuantity={totalBoughtHeads} />
+          {isOpen ? (
+            <CloseFaenaButton 
+              slaughterId={slaughter.id} 
+              totalBoughtHeads={totalBoughtHeads}
+              totalFaenaHeads={totalFaenaHeads}
+              disabled={slaughter.details.length === 0}
+            />
+          ) : (
+            <div className="flex flex-col md:flex-row gap-2">
+              <div className="flex items-center gap-2 px-4 py-2 bg-zinc-800/50 text-zinc-300 rounded-lg border border-zinc-700/50">
+                <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+                <span className="font-medium">Faena Cerrada</span>
+              </div>
+              <GenerateFaenaPdfButton slaughter={slaughter} />
             </div>
-            <GenerateFaenaPdfButton slaughter={slaughter} />
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

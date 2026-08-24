@@ -229,3 +229,114 @@ export async function sendBatchToLiveSale(batchId: string) {
     return { success: false, error: error.message };
   }
 }
+
+export async function registerMenudencias(data: {
+  batchId: string;
+  quantity: number;
+}) {
+  try {
+    const { batchId, quantity } = data;
+
+    if (!quantity || isNaN(quantity) || quantity <= 0) {
+      throw new Error("La cantidad debe ser mayor a 0.");
+    }
+
+    await prisma.$transaction(async (tx) => {
+      // Validar Lote y cantidad de reses
+      const batch = await tx.batch.findUnique({
+        where: { id: batchId },
+        include: { details: true }
+      });
+
+      if (!batch) {
+        throw new Error("Lote no encontrado.");
+      }
+
+      const totalHeads = batch.details.reduce((acc, d) => acc + d.quantity, 0);
+
+      if (quantity > totalHeads) {
+        throw new Error(`La cantidad de menudencias (${quantity}) no puede superar la cantidad de animales del lote (${totalHeads}).`);
+      }
+
+      // Buscar o crear el Artículo "Lote de Menudencias"
+      let item = await tx.item.findUnique({
+        where: { code: "MENUDENCIA-LOTE" }
+      });
+
+      if (!item) {
+        item = await tx.item.create({
+          data: {
+            code: "MENUDENCIA-LOTE",
+            name: "Lote de Menudencias",
+            category: "Menudencia",
+            unit: "UN",
+            isSlaughterable: false,
+            description: "Menudencias generadas por faena de un lote"
+          }
+        });
+      }
+
+      // Validar si ya existe un registro de menudencias para este lote
+      const existingLot = await tx.inventoryLot.findFirst({
+        where: {
+          batchId: batchId,
+          itemId: item.id
+        }
+      });
+
+      if (existingLot) {
+        // Actualizar el stock existente
+        await tx.inventoryLot.update({
+          where: { id: existingLot.id },
+          data: {
+            initialStock: existingLot.initialStock + quantity,
+            currentStock: existingLot.currentStock + quantity
+          }
+        });
+
+        // Registrar movimiento
+        await tx.inventoryMovement.create({
+          data: {
+            inventoryLotId: existingLot.id,
+            itemId: item.id,
+            type: "IN",
+            quantity: quantity,
+            referenceId: batchId,
+            concept: `Carga adicional de Menudencias Lote #${batch.batchNumber}`
+          }
+        });
+      } else {
+        // Crear nuevo InventoryLot
+        const newLot = await tx.inventoryLot.create({
+          data: {
+            batchId: batchId,
+            itemId: item.id,
+            initialStock: quantity,
+            currentStock: quantity,
+            unitCost: 0 // Las menudencias tienen costo cero
+          }
+        });
+
+        // Registrar movimiento
+        await tx.inventoryMovement.create({
+          data: {
+            inventoryLotId: newLot.id,
+            itemId: item.id,
+            type: "IN",
+            quantity: quantity,
+            referenceId: batchId,
+            concept: `Carga inicial de Menudencias Lote #${batch.batchNumber}`
+          }
+        });
+      }
+    });
+
+    revalidatePath(`/operaciones/faena/${batchId}`);
+    revalidatePath("/inventario");
+
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
