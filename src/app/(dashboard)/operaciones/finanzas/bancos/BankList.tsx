@@ -3,7 +3,8 @@
 import React, { useState } from "react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { Building2, ChevronDown, ChevronUp, ArrowUpRight, ArrowDownRight, RefreshCcw, Settings2 } from "lucide-react";
+import { Building2, ChevronDown, ChevronUp, ArrowUpRight, ArrowDownRight, RefreshCcw, Settings2, FileText } from "lucide-react";
+import Link from "next/link";
 import { BalanceAdjustmentModal } from "@/components/finance/BalanceAdjustmentModal";
 
 export function BankList({ initialBanks, userRole }: { initialBanks: any[], userRole?: string }) {
@@ -63,12 +64,7 @@ export function BankList({ initialBanks, userRole }: { initialBanks: any[], user
                       )}
                     </td>
                     <td className="px-6 py-4 text-right font-bold text-emerald-400">
-                      {formatCurrency(
-                        bank.transactions.reduce((acc: number, tx: any) => {
-                          return tx.type === 'INCOME' ? acc + tx.amount : acc - tx.amount;
-                        }, bank.initialBalance), 
-                        bank.currency.code
-                      )}
+                      {formatCurrency(bank.currentBalance, bank.currency.code)}
                     </td>
                   </tr>
                   {isExpanded && (
@@ -77,15 +73,24 @@ export function BankList({ initialBanks, userRole }: { initialBanks: any[], user
                         <div className="pl-8 border-l-2 border-zinc-800 space-y-3">
                           <div className="flex items-center justify-between">
                             <h4 className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Últimos Movimientos (Top 10)</h4>
-                            {userRole === "ADMIN" && (
-                              <button
-                                onClick={() => setAdjustingBank(bank)}
-                                className="flex items-center gap-1.5 text-xs text-emerald-400 hover:text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/20 px-2 py-1.5 rounded transition-colors"
+                            <div className="flex gap-2">
+                              <Link
+                                href={`/operaciones/finanzas/bancos/${bank.id}/extracto`}
+                                className="flex items-center gap-1.5 text-xs text-blue-400 hover:text-blue-300 bg-blue-500/10 hover:bg-blue-500/20 px-2 py-1.5 rounded transition-colors"
                               >
-                                <Settings2 className="w-3.5 h-3.5" />
-                                Ajustar Saldo
-                              </button>
-                            )}
+                                <FileText className="w-3.5 h-3.5" />
+                                Ver Extracto
+                              </Link>
+                              {userRole === "ADMIN" && (
+                                <button
+                                  onClick={() => setAdjustingBank(bank)}
+                                  className="flex items-center gap-1.5 text-xs text-emerald-400 hover:text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/20 px-2 py-1.5 rounded transition-colors"
+                                >
+                                  <Settings2 className="w-3.5 h-3.5" />
+                                  Ajustar Saldo
+                                </button>
+                              )}
+                            </div>
                           </div>
                           
                           {bank.transactions.length === 0 ? (

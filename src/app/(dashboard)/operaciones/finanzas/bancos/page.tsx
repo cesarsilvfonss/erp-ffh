@@ -15,18 +15,29 @@ export default async function BancosPage() {
     redirect("/");
   }
 
-  const banks = await prisma.bankAccount.findMany({
+  // Obtener todos los bancos con todas sus transacciones para el saldo real
+  const allBanks = await prisma.bankAccount.findMany({
     include: {
       currency: true,
       transactions: {
         orderBy: { date: "desc" },
-        take: 10,
-        include: {
-          user: true
-        }
+        include: { user: true }
       }
     },
     orderBy: { createdAt: "desc" }
+  });
+
+  // Mapear inyectando el saldo real y limitando las transacciones a 10 para la UI
+  const banksWithBalance = allBanks.map(bank => {
+    const realBalance = bank.transactions.reduce((acc, tx) => {
+      return tx.type === 'INCOME' ? acc + tx.amount : acc - tx.amount;
+    }, bank.initialBalance);
+
+    return {
+      ...bank,
+      currentBalance: realBalance,
+      transactions: bank.transactions.slice(0, 10) // Solo pasamos las últimas 10
+    };
   });
 
   const currencies = await prisma.currency.findMany();
@@ -45,7 +56,7 @@ export default async function BancosPage() {
         <BankForm currencies={currencies} />
       </div>
 
-      <BankList initialBanks={banks} userRole={session.user.role} />
+      <BankList initialBanks={banksWithBalance} userRole={session.user.role} />
     </div>
   );
 }
