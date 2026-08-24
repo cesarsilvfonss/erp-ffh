@@ -33,6 +33,7 @@ const menuCategories = [
       { icon: Beef, label: "Inventario", href: "/inventario", roles: ["ADMIN", "ADMINISTRATION"] },
       { icon: CircleDollarSign, label: "Ventas", href: "/operaciones/ventas", roles: ["ADMIN", "ADMINISTRATION"] },
       { icon: CircleDollarSign, label: "Gastos", href: "/operaciones/gastos", roles: ["ADMIN", "ADMINISTRATION", "WEIGHER"] },
+      { icon: FileText, label: "Reporte de Lotes", href: "/operaciones/lotes/reporte", roles: ["ADMIN", "ADMINISTRATION"] },
     ]
   },
   {
