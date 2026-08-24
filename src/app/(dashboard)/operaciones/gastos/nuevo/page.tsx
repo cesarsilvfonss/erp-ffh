@@ -4,10 +4,15 @@ import { BulkExpenseForm } from "./BulkExpenseForm";
 export const dynamic = "force-dynamic";
 
 export default async function NewExpensePage() {
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
   const batches = await prisma.batch.findMany({
     orderBy: { createdAt: "desc" },
     include: { provider: true },
-    where: { status: { not: "CLOSED" } }, // maybe just active ones, but let's allow all for now. Actually, any batch.
+    where: {
+      createdAt: { gte: thirtyDaysAgo }
+    }
   });
 
   const categories = await prisma.expenseCategory.findMany({
