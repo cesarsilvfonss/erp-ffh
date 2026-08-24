@@ -2,10 +2,16 @@ import { prisma } from "@/lib/prisma";
 import { ArrowRight, Search, PlayCircle, Clock, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
 import { InitiateFaenaButton } from "./InitiateFaenaButton";
+import { LiveSaleButton } from "./LiveSaleButton";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
 export default async function FaenaListPage() {
+  const session = await getServerSession(authOptions);
+  const userRole = session?.user?.role || "WEIGHER";
+  const isAdmin = userRole === "ADMIN" || userRole === "ADMINISTRATION";
   // Obtenemos los lotes que tienen estado IN_SLAUGHTER, IN_SALE, CLOSED
   // O que tienen un slaughter asociado
   const slaughters = await prisma.slaughter.findMany({
@@ -24,7 +30,8 @@ export default async function FaenaListPage() {
   const availableBatches = await prisma.batch.findMany({
     where: { 
       status: "CLOSED", // Asumimos que un lote cerrado de compra está listo para faenar
-      slaughter: null   // Que no tenga faena iniciada
+      slaughter: null,  // Que no tenga faena iniciada
+      isLiveSale: false // Que no haya sido mandado a Venta en Pie
     },
     include: {
       provider: true,
@@ -57,7 +64,10 @@ export default async function FaenaListPage() {
                     <p className="text-sm text-emerald-500/70 font-medium">{heads} Cabezas</p>
                   </div>
                   
-                  <InitiateFaenaButton batchId={batch.id} />
+                  <div className="flex items-center gap-2 mt-4">
+                    <InitiateFaenaButton batchId={batch.id} />
+                    {isAdmin && <LiveSaleButton batchId={batch.id} />}
+                  </div>
                 </div>
               );
             })}

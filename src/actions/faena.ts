@@ -157,3 +157,75 @@ export async function closeFaena(slaughterId: string, payload: { totalWeight: nu
     return { success: false, error: error.message };
   }
 }
+
+export async function sendBatchToLiveSale(batchId: string) {
+  try {
+    await prisma.$transaction(async (tx) => {
+      const batch = await tx.batch.findUnique({
+        where: { id: batchId },
+        include: { details: true, closure: { include: { prices: true } } }
+      });
+
+      if (!batch || batch.status !== "CLOSED") {
+        throw new Error("El lote debe estar cerrado (Romaneo) para enviarlo a Venta en Pie.");
+      }
+
+      // Para cada artículo en el lote, creamos su InventoryLot
+      const weightPerItem = batch.details.reduce((acc, d) => {
+        if (!acc[d.itemId]) acc[d.itemId] = 0;
+        acc[d.itemId] += d.netWeight; // usamos el peso neto de la compra
+        return acc;
+      }, {} as Record<string, number>);
+
+      for (const [itemId, totalWeight] of Object.entries(weightPerItem)) {
+        // Encontrar cuánto se pagó por este artículo en el romaneo (closure)
+        let unitCost = 0;
+        let liquidWeightToStock = totalWeight;
+
+        if (batch.closure && batch.closure.prices) {
+          const priceForItem = batch.closure.prices.find((p: any) => p.itemId === itemId);
+          if (priceForItem) {
+            unitCost = priceForItem.pricePerKg;
+            liquidWeightToStock = priceForItem.liquidWeight; // usamos el peso líquido final tras mermas si existe
+          }
+        }
+
+        // Crear InventoryLot para este batch
+        const inventoryLot = await tx.inventoryLot.create({
+          data: {
+            batchId: batch.id,
+            itemId: itemId,
+            initialStock: liquidWeightToStock,
+            currentStock: liquidWeightToStock,
+            unitCost: unitCost
+          }
+        });
+
+        // Registrar movimiento de Entrada apuntando al lote
+        await tx.inventoryMovement.create({
+          data: {
+            inventoryLotId: inventoryLot.id,
+            itemId: itemId,
+            type: "IN",
+            quantity: liquidWeightToStock,
+            referenceId: batchId,
+            concept: `Ingreso por Venta en Pie - Lote #${batch.batchNumber}`
+          }
+        });
+      }
+
+      // Marcamos el lote como isLiveSale para que no aparezca en Faena
+      await tx.batch.update({
+        where: { id: batchId },
+        data: { isLiveSale: true }
+      });
+    });
+
+    revalidatePath("/operaciones/faena");
+    revalidatePath("/inventario");
+
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}

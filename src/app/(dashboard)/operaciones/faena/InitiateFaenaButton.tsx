@@ -26,7 +26,7 @@ export function InitiateFaenaButton({ batchId }: { batchId: string }) {
     <button 
       onClick={handleInitiate}
       disabled={loading}
-      className="mt-4 flex items-center justify-center gap-2 w-full bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 py-2 rounded-lg text-sm font-bold transition-colors disabled:opacity-50"
+      className="flex-1 bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-zinc-950 px-4 py-2.5 rounded-lg text-sm font-bold transition-colors flex items-center justify-center gap-2"
     >
       <PlayCircle className="w-4 h-4" />
       {loading ? "Iniciando..." : "Iniciar Faena"}
