@@ -271,7 +271,7 @@ export function PaymentModal({
                         >
                           <option value="">Selecciona cuenta...</option>
                           {banks.map(b => (
-                            <option key={b.id} value={b.id}>{b.name} ({b.currency})</option>
+                            <option key={b.id} value={b.id}>{b.bankName} ({b.currency.code})</option>
                           ))}
                         </select>
                       </div>
