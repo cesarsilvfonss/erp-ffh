@@ -38,7 +38,7 @@ export function PaymentModal({
   useEffect(() => {
     if (receivable && isOpen) {
       setPayments([{
-        id: crypto.randomUUID(),
+        id: String(Date.now() + Math.random()),
         method: "TRANSFER",
         amount: receivable.amount - receivable.paidAmount,
         reference: "",
@@ -61,7 +61,7 @@ export function PaymentModal({
 
   function addPaymentLine() {
     setPayments([...payments, {
-      id: crypto.randomUUID(),
+      id: String(Date.now() + Math.random()),
       method: "TRANSFER",
       amount: remaining > 0 ? remaining : 0,
       reference: "",
