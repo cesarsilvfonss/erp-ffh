@@ -82,7 +82,7 @@ export function BalancesReportClient({ data }: { data: ReportData[] }) {
           data.map((clientData, index) => (
             <div 
               key={clientData.client.id} 
-              className="bg-zinc-900/40 print:bg-white rounded-2xl border border-zinc-800/50 print:border-gray-300 overflow-hidden break-inside-avoid"
+              className="bg-zinc-900/40 print:bg-white rounded-2xl border border-zinc-800/50 print:border-gray-300 overflow-hidden print:overflow-visible print:break-inside-auto break-inside-avoid"
             >
               <div className="bg-zinc-800/50 print:bg-gray-100 px-6 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
@@ -95,7 +95,7 @@ export function BalancesReportClient({ data }: { data: ReportData[] }) {
                 </div>
               </div>
 
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto print:overflow-visible">
                 <table className="w-full text-left border-collapse">
                   <thead>
                     <tr className="border-b border-zinc-800 print:border-gray-300 bg-zinc-900/20 print:bg-gray-50">
