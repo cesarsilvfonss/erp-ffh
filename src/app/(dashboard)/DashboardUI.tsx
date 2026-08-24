@@ -12,6 +12,7 @@ export function DashboardUI({
   grossProfit,
   mermasThisMonth,
   expensesThisMonth,
+  retentionsThisMonth,
   netProfit,
   receivables,
   payables
@@ -23,6 +24,7 @@ export function DashboardUI({
   grossProfit: number;
   mermasThisMonth: number;
   expensesThisMonth: number;
+  retentionsThisMonth: number;
   netProfit: number;
   receivables: number;
   payables: number;
@@ -106,6 +108,10 @@ export function DashboardUI({
                 <div className="flex justify-between items-center border-b border-zinc-800 pb-3">
                   <span className="text-zinc-400 font-medium flex items-center gap-2"><AlertTriangle className="w-4 h-4 text-amber-500"/> Pérdida por Mermas</span>
                   <span className="text-amber-400 font-bold">-{formatCurrency(mermasThisMonth)}</span>
+                </div>
+                <div className="flex justify-between items-center border-b border-zinc-800 pb-3">
+                  <span className="text-zinc-400 font-medium flex items-center gap-2"><AlertTriangle className="w-4 h-4 text-amber-500"/> Retenciones Sufridas</span>
+                  <span className="text-amber-400 font-bold">-{formatCurrency(retentionsThisMonth)}</span>
                 </div>
               </div>
             </div>

@@ -7,16 +7,17 @@ import { authOptions } from "@/lib/auth";
 
 export async function processPayment(data: {
   receivableId: string;
-  amount: number;
-  method: string; // CASH, TRANSFER, CHECK, RETENTION
   date: string;
-  reference?: string;
-  bankAccountId?: string;
-  // Check details
-  checkBank?: string;
-  checkNumber?: string;
-  issueDate?: string;
-  dueDate?: string;
+  payments: Array<{
+    amount: number;
+    method: string;
+    reference?: string;
+    bankAccountId?: string;
+    checkBank?: string;
+    checkNumber?: string;
+    issueDate?: string;
+    dueDate?: string;
+  }>;
 }) {
   try {
     const session = await getServerSession(authOptions);
@@ -33,62 +34,69 @@ export async function processPayment(data: {
       if (!receivable) throw new Error("Cuenta a cobrar no encontrada");
 
       const balance = receivable.amount - receivable.paidAmount;
-      if (data.amount > balance) {
-        throw new Error("El monto del pago supera el saldo pendiente");
-      }
+      
+      const totalToPay = data.payments.reduce((acc, p) => acc + p.amount, 0);
 
-      const newPaidAmount = receivable.paidAmount + data.amount;
-      const newStatus = newPaidAmount >= receivable.amount ? "PAID" : "PARTIAL";
+      if (totalToPay <= 0) throw new Error("El monto total a pagar debe ser mayor a 0");
+      // Permitimos un pequeño margen por problemas de redondeo en retenciones
+      if (totalToPay > balance + 1) throw new Error("El monto de los pagos supera el saldo pendiente");
 
-      // 1. Create the Payment record
-      const payment = await tx.payment.create({
-        data: {
-          accountReceivableId: data.receivableId,
-          amount: data.amount,
-          method: data.method as any,
-          date: new Date(data.date + "T12:00:00Z"),
-          reference: data.reference || null,
-          bankAccountId: data.method === "CASH" || data.method === "TRANSFER" ? data.bankAccountId : null,
-        }
-      });
+      let newPaidAmount = receivable.paidAmount;
 
-      // 2. If it's CASH or TRANSFER, create a Transaction to update Bank Balance
-      if ((data.method === "CASH" || data.method === "TRANSFER") && data.bankAccountId) {
-        const transaction = await tx.transaction.create({
+      for (const p of data.payments) {
+        newPaidAmount += p.amount;
+
+        // 1. Create the Payment record
+        const payment = await tx.payment.create({
           data: {
-            bankAccountId: data.bankAccountId,
+            accountReceivableId: data.receivableId,
+            amount: p.amount,
+            method: p.method === "RETENTION_IVA" || p.method === "RETENTION_RENTA" ? "RETENTION" : (p.method as any),
             date: new Date(data.date + "T12:00:00Z"),
-            type: "INCOME",
-            amount: data.amount,
-            reference: data.reference,
-            concept: `Cobro de Cliente: ${receivable.client.legalName}`,
-            userId: session.user.id
+            reference: p.method === "RETENTION_IVA" ? "RETENCION_IVA" : p.method === "RETENTION_RENTA" ? "RETENCION_RENTA" : (p.reference || null),
+            bankAccountId: p.method === "CASH" || p.method === "TRANSFER" ? p.bankAccountId : null,
           }
         });
 
-        // Link payment to transaction
-        await tx.payment.update({
-          where: { id: payment.id },
-          data: { transactionId: transaction.id }
-        });
-      }
+        // 2. If it's CASH or TRANSFER, create a Transaction to update Bank Balance
+        if ((p.method === "CASH" || p.method === "TRANSFER") && p.bankAccountId) {
+          const transaction = await tx.transaction.create({
+            data: {
+              bankAccountId: p.bankAccountId,
+              date: new Date(data.date + "T12:00:00Z"),
+              type: "INCOME",
+              amount: p.amount,
+              reference: p.reference,
+              concept: `Cobro de Cliente: ${receivable.client.legalName}`,
+              userId: session.user.id
+            }
+          });
 
-      // 3. If it's a CHECK, store it in portfolio
-      if (data.method === "CHECK" && data.checkBank && data.checkNumber) {
-        await tx.check.create({
-          data: {
-            paymentId: payment.id,
-            bankName: data.checkBank,
-            checkNumber: data.checkNumber,
-            issueDate: new Date(data.issueDate + "T12:00:00Z"),
-            dueDate: new Date(data.dueDate + "T12:00:00Z"),
-            amount: data.amount,
-            status: "IN_PORTFOLIO"
-          }
-        });
+          // Link payment to transaction
+          await tx.payment.update({
+            where: { id: payment.id },
+            data: { transactionId: transaction.id }
+          });
+        }
+
+        // 3. If it's CHECK, create Check record
+        if (p.method === "CHECK" && p.checkBank && p.checkNumber && p.issueDate && p.dueDate) {
+          await tx.check.create({
+            data: {
+              paymentId: payment.id,
+              bankName: p.checkBank,
+              checkNumber: p.checkNumber,
+              issueDate: new Date(p.issueDate + "T12:00:00Z"),
+              dueDate: new Date(p.dueDate + "T12:00:00Z"),
+              amount: p.amount,
+              status: "IN_PORTFOLIO"
+            }
+          });
+        }
       }
 
       // 4. Update the Receivable
+      const newStatus = newPaidAmount >= receivable.amount - 1 ? "PAID" : "PARTIAL";
       await tx.accountReceivable.update({
         where: { id: data.receivableId },
         data: {

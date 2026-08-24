@@ -68,8 +68,17 @@ export default async function DashboardPage() {
   });
   const expensesThisMonth = expensesThisMonthRecords.reduce((acc, exp) => acc + exp.amount, 0);
 
+  // 5.1 Retenciones Sufridas del Mes
+  const retentionsThisMonthRecords = await prisma.payment.findMany({
+    where: { 
+      method: "RETENTION",
+      date: { gte: startOfMonth }
+    }
+  });
+  const retentionsThisMonth = retentionsThisMonthRecords.reduce((acc, p) => acc + p.amount, 0);
+
   // 6. Rentabilidad Neta
-  const netProfit = grossProfit - expensesThisMonth - mermasThisMonth;
+  const netProfit = grossProfit - expensesThisMonth - mermasThisMonth - retentionsThisMonth;
 
   // 7. Cuentas por Cobrar y Pagar
   const receivablesRecords = await prisma.accountReceivable.findMany({
@@ -91,6 +100,7 @@ export default async function DashboardPage() {
       grossProfit={grossProfit}
       mermasThisMonth={mermasThisMonth}
       expensesThisMonth={expensesThisMonth}
+      retentionsThisMonth={retentionsThisMonth}
       netProfit={netProfit}
       receivables={receivables}
       payables={payables}
