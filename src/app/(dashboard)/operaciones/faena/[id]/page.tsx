@@ -4,6 +4,8 @@ import Link from "next/link";
 import { ArrowLeft, CheckCircle2 } from "lucide-react";
 import { FaenaForm } from "./FaenaForm";
 import { CloseFaenaButton } from "@/components/faena/CloseFaenaButton";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/auth";
 
 import { GenerateFaenaPdfButton } from "@/components/faena/GenerateFaenaPdfButton";
 
@@ -11,6 +13,8 @@ export const dynamic = "force-dynamic";
 
 export default async function FaenaDetailsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  const session = await getServerSession(authOptions);
+  const userRole = session?.user?.role || "WEIGHER";
   
   const slaughter = await prisma.slaughter.findUnique({
     where: { id },
@@ -173,6 +177,7 @@ export default async function FaenaDetailsPage({ params }: { params: Promise<{ i
             <FaenaForm 
               slaughterId={slaughter.id} 
               availableItems={availableItems} 
+              userRole={userRole}
             />
           )}
 

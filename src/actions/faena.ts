@@ -49,6 +49,34 @@ export async function addFaenaDetail(data: {
   }
 }
 
+export async function addBulkFaenaDetail(data: {
+  slaughterId: string;
+  itemId: string;
+  totalWeight: number;
+  heads: number;
+}) {
+  try {
+    // 1 res = 2 medias reses (2 details).
+    const numberOfDetails = data.heads * 2;
+    const weightPerDetail = data.totalWeight / numberOfDetails;
+    
+    const detailsToCreate = Array.from({ length: numberOfDetails }).map(() => ({
+      slaughterId: data.slaughterId,
+      itemId: data.itemId,
+      weight: weightPerDetail,
+    }));
+
+    await prisma.slaughterDetail.createMany({
+      data: detailsToCreate,
+    });
+    
+    revalidatePath(`/operaciones/faena/${data.slaughterId}`);
+    return { success: true, count: numberOfDetails };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
 export async function deleteFaenaDetail(id: string, slaughterId: string) {
   try {
     await prisma.slaughterDetail.delete({ where: { id } });
