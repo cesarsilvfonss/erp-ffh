@@ -29,7 +29,7 @@ export default async function DashboardPage() {
     return acc + (lot.currentStock * lot.unitCost);
   }, 0);
 
-  // 3. Ventas del Mes
+  // 3. Ventas del Mes y Costo de Ventas (COGS)
   const startOfMonth = new Date();
   startOfMonth.setDate(1);
   startOfMonth.setHours(0, 0, 0, 0);
@@ -37,17 +37,46 @@ export default async function DashboardPage() {
     where: { 
       date: { gte: startOfMonth }, 
       status: 'CONFIRMED' 
-    }
+    },
+    include: { details: true }
   });
+  
   const salesThisMonth = salesThisMonthRecords.reduce((acc, sale) => acc + sale.totalValue, 0);
+  const costOfSalesThisMonth = salesThisMonthRecords.reduce((acc, sale) => {
+    const saleCost = sale.details.reduce((sum, d) => sum + (d.quantityKg * d.costAtSale), 0);
+    return acc + saleCost;
+  }, 0);
+  
+  const grossProfit = salesThisMonth - costOfSalesThisMonth;
 
-  // 4. Cuentas por Cobrar
+  // 4. Mermas de Cámara del Mes
+  const mermasThisMonthRecords = await prisma.inventoryMovement.findMany({
+    where: {
+      type: "OUT",
+      concept: { startsWith: "MERMA DE CAMARA" },
+      createdAt: { gte: startOfMonth }
+    },
+    include: { inventoryLot: true }
+  });
+  const mermasThisMonth = mermasThisMonthRecords.reduce((acc, mov) => {
+    return acc + (mov.quantity * mov.inventoryLot.unitCost);
+  }, 0);
+
+  // 5. Gastos Totales del Mes
+  const expensesThisMonthRecords = await prisma.expense.findMany({
+    where: { date: { gte: startOfMonth } }
+  });
+  const expensesThisMonth = expensesThisMonthRecords.reduce((acc, exp) => acc + exp.amount, 0);
+
+  // 6. Rentabilidad Neta
+  const netProfit = grossProfit - expensesThisMonth - mermasThisMonth;
+
+  // 7. Cuentas por Cobrar y Pagar
   const receivablesRecords = await prisma.accountReceivable.findMany({
     where: { status: { not: 'PAID' } }
   });
   const receivables = receivablesRecords.reduce((acc, rec) => acc + (rec.amount - rec.paidAmount), 0);
 
-  // 5. Cuentas por Pagar
   const payablesRecords = await prisma.accountPayable.findMany({
     where: { status: { not: 'PAID' } }
   });
@@ -58,6 +87,11 @@ export default async function DashboardPage() {
       bankBalance={bankBalance}
       inventoryValue={inventoryValue}
       salesThisMonth={salesThisMonth}
+      costOfSalesThisMonth={costOfSalesThisMonth}
+      grossProfit={grossProfit}
+      mermasThisMonth={mermasThisMonth}
+      expensesThisMonth={expensesThisMonth}
+      netProfit={netProfit}
       receivables={receivables}
       payables={payables}
     />

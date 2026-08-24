@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { PackageSearch, TrendingUp } from "lucide-react";
+import { MermaForm } from "./MermaForm";
 
 export const dynamic = "force-dynamic";
 
@@ -24,11 +25,21 @@ export default async function InventoryPage() {
   const totalValue = inventoryLots.reduce((acc, lot) => acc + (lot.currentStock * lot.unitCost), 0);
   const avgCostPerKg = totalKg > 0 ? totalValue / totalKg : 0;
 
+  const mappedLots = inventoryLots.map(lot => ({
+    id: lot.id,
+    itemName: lot.item.name,
+    batchNumber: lot.batch ? lot.batch.batchNumber : "Manual",
+    currentStock: lot.currentStock
+  }));
+
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-zinc-100">Inventario de Artículos por Lote</h1>
-        <p className="text-zinc-400 text-sm mt-1">Stock disponible valorizado y agrupado por lote de compra.</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-zinc-100">Inventario de Artículos por Lote</h1>
+          <p className="text-zinc-400 text-sm mt-1">Stock disponible valorizado y agrupado por lote de compra.</p>
+        </div>
+        <MermaForm lots={mappedLots} />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
