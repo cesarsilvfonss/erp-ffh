@@ -15,7 +15,8 @@ import {
   X,
   LogOut,
   UserCog,
-  Landmark
+  Landmark,
+  FileText
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useMobileMenu } from "./MobileMenuContext";
@@ -39,6 +40,7 @@ const menuCategories = [
     items: [
       { icon: ArrowRightLeft, label: "Bancos y Cajas", href: "/operaciones/finanzas/bancos", roles: ["ADMIN", "ADMINISTRATION"] },
       { icon: Wallet, label: "Cuentas por Cobrar", href: "/operaciones/finanzas/cuentas-cobrar", roles: ["ADMIN", "ADMINISTRATION"] },
+      { icon: FileText, label: "Reporte de Saldos", href: "/operaciones/finanzas/reporte-saldos", roles: ["ADMIN", "ADMINISTRATION"] },
       { icon: Wallet, label: "Cuentas por Pagar", href: "/operaciones/finanzas/cuentas-pagar", roles: ["ADMIN", "ADMINISTRATION"] },
       { icon: CircleDollarSign, label: "Cartera Cheques", href: "/operaciones/finanzas/cheques", roles: ["ADMIN", "ADMINISTRATION"] },
       { icon: Landmark, label: "Préstamos", href: "/operaciones/finanzas/prestamos", roles: ["ADMIN"] },
