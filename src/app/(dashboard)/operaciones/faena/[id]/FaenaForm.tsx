@@ -141,7 +141,7 @@ export function FaenaForm({
           <input 
             ref={weightInputRef}
             type="number"
-            step="0.1"
+            step="0.01"
             value={weight}
             onChange={(e) => setWeight(e.target.value)}
             disabled={loading}

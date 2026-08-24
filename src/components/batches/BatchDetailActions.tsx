@@ -131,8 +131,8 @@ export function BatchDetailActions({
                       name="netWeight"
                       defaultValue={detail.netWeight}
                       required
-                      min="1"
-                      step="0.1"
+                      min="0.01"
+                      step="0.01"
                       className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:border-emerald-500/50"
                     />
                   </div>

@@ -187,7 +187,7 @@ export function CloseBatchButton({
                 <div className="relative w-1/2">
                   <input 
                     type="number"
-                    step="0.1"
+                    step="0.01"
                     min="0"
                     max="100"
                     required
@@ -243,7 +243,7 @@ export function CloseBatchButton({
                         <label className="block text-xs text-zinc-500 mb-1">KG Líquidos</label>
                         <input
                           type="number"
-                          step="0.1"
+                          step="0.01"
                           required
                           value={seg.liquidWeight === 0 ? '' : seg.liquidWeight}
                           onChange={(e) => handleSegmentChange(seg.id, 'liquidWeight', parseFloat(e.target.value) || 0)}

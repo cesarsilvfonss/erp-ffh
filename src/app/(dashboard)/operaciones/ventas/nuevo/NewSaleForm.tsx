@@ -229,7 +229,7 @@ export function NewSaleForm({
                   <label className="block text-xs font-medium text-zinc-500 mb-1">Cant. (KG)</label>
                   <input
                     type="number"
-                    step="0.1"
+                    step="0.01"
                     min="0.1"
                     required
                     disabled={loading}
