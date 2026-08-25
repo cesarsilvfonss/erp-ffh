@@ -59,6 +59,15 @@ export default async function ExtractoBancarioPage({
         lte: endDate
       }
     },
+    include: {
+      payablePayments: {
+        include: {
+          accountPayable: {
+            include: { provider: true }
+          }
+        }
+      }
+    },
     orderBy: { date: "asc" } // Importante para calcular el running balance
   });
 

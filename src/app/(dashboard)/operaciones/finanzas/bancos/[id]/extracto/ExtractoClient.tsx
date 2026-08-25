@@ -1,7 +1,8 @@
 "use client";
 
+import * as React from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Printer, Building2, Calendar } from "lucide-react";
+import { ArrowLeft, Printer, Building2, Calendar, ChevronDown, ChevronUp } from "lucide-react";
 import Link from "next/link";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -22,6 +23,14 @@ export function ExtractoClient({
   selectedYear: number
 }) {
   const router = useRouter();
+  const [expandedRows, setExpandedRows] = React.useState<Set<string>>(new Set());
+
+  const toggleRow = (id: string) => {
+    const newSet = new Set(expandedRows);
+    if (newSet.has(id)) newSet.delete(id);
+    else newSet.add(id);
+    setExpandedRows(newSet);
+  };
 
   const formatCurrency = (val: number) => 
     new Intl.NumberFormat('es-PY', { style: 'currency', currency: bank.currency.code, maximumFractionDigits: 0 }).format(val);
@@ -153,25 +162,66 @@ export function ExtractoClient({
                     </td>
                   </tr>
                 ) : (
-                  rows.map((row, i) => (
-                    <tr key={row.id} className="hover:bg-zinc-800/30 transition-colors">
-                      <td className="px-6 py-3 text-zinc-300 print:text-black whitespace-nowrap">
-                        {format(new Date(row.date), "dd/MM/yyyy", { locale: es })}
-                      </td>
-                      <td className="px-6 py-3 text-zinc-300 print:text-gray-800">
-                        {row.description}
-                      </td>
-                      <td className="px-6 py-3 text-right text-rose-400 print:text-rose-600 font-medium">
-                        {row.type === "EXPENSE" ? formatCurrency(row.amount) : ""}
-                      </td>
-                      <td className="px-6 py-3 text-right text-emerald-400 print:text-emerald-600 font-medium">
-                        {row.type === "INCOME" ? formatCurrency(row.amount) : ""}
-                      </td>
-                      <td className="px-6 py-3 text-right text-zinc-100 print:text-black font-bold">
-                        {formatCurrency(row.runningBalance)}
-                      </td>
-                    </tr>
-                  ))
+                  rows.map((row, i) => {
+                    const hasPayments = row.payablePayments && row.payablePayments.length > 0;
+                    const isExpanded = expandedRows.has(row.id);
+
+                    return (
+                      <React.Fragment key={row.id}>
+                        <tr className="hover:bg-zinc-800/30 transition-colors">
+                          <td className="px-6 py-3 text-zinc-300 print:text-black whitespace-nowrap">
+                            {format(new Date(row.date), "dd/MM/yyyy", { locale: es })}
+                          </td>
+                          <td className="px-6 py-3 text-zinc-300 print:text-gray-800">
+                            <div className="flex items-center gap-2">
+                              {hasPayments && (
+                                <button 
+                                  onClick={() => toggleRow(row.id)}
+                                  className="text-zinc-400 hover:text-emerald-400 print:hidden transition-colors"
+                                >
+                                  {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                                </button>
+                              )}
+                              <span>
+                                {row.concept}
+                                {row.reference && <span className="text-zinc-500 text-xs ml-2">({row.reference})</span>}
+                              </span>
+                            </div>
+                          </td>
+                          <td className="px-6 py-3 text-right text-rose-400 print:text-rose-600 font-medium">
+                            {row.type === "EXPENSE" ? formatCurrency(row.amount) : ""}
+                          </td>
+                          <td className="px-6 py-3 text-right text-emerald-400 print:text-emerald-600 font-medium">
+                            {row.type === "INCOME" ? formatCurrency(row.amount) : ""}
+                          </td>
+                          <td className="px-6 py-3 text-right text-zinc-100 print:text-black font-bold">
+                            {formatCurrency(row.runningBalance)}
+                          </td>
+                        </tr>
+                        {hasPayments && isExpanded && (
+                          <tr className="bg-zinc-900/50 print:bg-gray-50">
+                            <td colSpan={5} className="px-12 py-3 border-l-2 border-emerald-500">
+                              <div className="text-sm">
+                                <p className="text-zinc-400 font-semibold mb-2">Detalle de Gastos Pagados:</p>
+                                <ul className="space-y-1">
+                                  {row.payablePayments.map((pp: any) => (
+                                    <li key={pp.id} className="flex justify-between text-zinc-300 print:text-gray-700 max-w-lg border-b border-zinc-800/50 print:border-gray-200 pb-1">
+                                      <span>
+                                        {pp.accountPayable.type === "BATCH_PURCHASE" ? "Lote" : "Gasto"} - {pp.accountPayable.provider.legalName}
+                                      </span>
+                                      <span className="font-mono text-rose-300 print:text-rose-600">
+                                        {formatCurrency(pp.amount)}
+                                      </span>
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                      </React.Fragment>
+                    );
+                  })
                 )}
               </tbody>
               {rows.length > 0 && (

@@ -15,9 +15,12 @@ export async function createBulkExpenses(data: {
 }) {
   try {
     // Usamos transacción para asegurar que todos los gastos se guarden correctamente
-    const result = await prisma.$transaction(
-      data.expenses.map(exp => 
-        prisma.expense.create({
+    const result = await prisma.$transaction(async (tx) => {
+      const createdExpenses = [];
+
+      for (const exp of data.expenses) {
+        // 1. Crear el gasto
+        const expense = await tx.expense.create({
           data: {
             date: data.date,
             batchId: data.batchId || null,
@@ -26,9 +29,25 @@ export async function createBulkExpenses(data: {
             description: exp.description.toUpperCase(),
             amount: exp.amount
           }
-        })
-      )
-    );
+        });
+
+        // 2. Crear la cuenta por pagar (AccountPayable)
+        await tx.accountPayable.create({
+          data: {
+            sourceId: expense.id,
+            type: "EXPENSE",
+            providerId: exp.providerId,
+            amount: exp.amount,
+            status: "PENDING",
+            dueDate: data.date,
+          }
+        });
+
+        createdExpenses.push(expense);
+      }
+
+      return createdExpenses;
+    });
     
     revalidatePath("/operaciones/gastos");
     if (data.batchId) {

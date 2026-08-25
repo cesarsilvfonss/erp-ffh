@@ -20,7 +20,10 @@ export default async function FaenaListPage() {
       batch: {
         include: {
           provider: true,
-          details: true
+          details: true,
+          inventoryLots: {
+            include: { item: true }
+          }
         }
       },
       details: true
@@ -96,6 +99,7 @@ export default async function FaenaListPage() {
                 <th className="px-6 py-3 font-medium">Fecha Faena</th>
                 <th className="px-6 py-3 font-medium">Estado</th>
                 <th className="px-6 py-3 font-medium">Avance (Cabezas)</th>
+                <th className="px-6 py-3 font-medium text-center">Menudencias</th>
                 <th className="px-6 py-3 font-medium text-right">Acciones</th>
               </tr>
             </thead>
@@ -103,6 +107,8 @@ export default async function FaenaListPage() {
               {slaughters.map((slaughter) => {
                 const totalBoughtHeads = slaughter.batch.details.reduce((acc, d) => acc + d.quantity, 0);
                 const faenadasHeads = slaughter.details.length * 0.5; // Cada línea = 0.5 cabezas
+                const menudenciasLot = slaughter.batch.inventoryLots.find(l => l.item.code === "MENUDENCIA-LOTE");
+                const menudenciasCount = menudenciasLot ? menudenciasLot.initialStock : 0;
                 
                 return (
                   <tr key={slaughter.id} className="hover:bg-zinc-800/50 transition-colors">
@@ -131,6 +137,11 @@ export default async function FaenaListPage() {
                         <span className="font-medium text-zinc-100">{faenadasHeads}</span>
                         <span className="text-zinc-500">/ {totalBoughtHeads}</span>
                       </div>
+                    </td>
+                    <td className="px-6 py-4 text-center">
+                      <span className={`px-2 py-1 rounded-full text-xs font-bold ${menudenciasCount > 0 ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' : 'text-zinc-600'}`}>
+                        {menudenciasCount} un.
+                      </span>
                     </td>
                     <td className="px-6 py-4 text-right">
                       <Link

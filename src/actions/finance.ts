@@ -276,8 +276,9 @@ export async function processPayablePayment(data: {
       const newStatus = newPaidAmount >= payable.amount ? "PAID" : "PARTIAL";
 
       // 1. Create the Bank Transaction (OUTCOME) if CASH or TRANSFER
+      let transactionId = null;
       if ((data.method === "CASH" || data.method === "TRANSFER") && data.bankAccountId) {
-        await tx.transaction.create({
+        const txRecord = await tx.transaction.create({
           data: {
             bankAccountId: data.bankAccountId,
             date: new Date(data.date + "T12:00:00Z"),
@@ -288,7 +289,18 @@ export async function processPayablePayment(data: {
             userId: session.user.id
           }
         });
+        transactionId = txRecord.id;
       }
+
+      // 1.5 Create the PayablePayment
+      await tx.payablePayment.create({
+        data: {
+          accountPayableId: data.payableId,
+          date: new Date(data.date + "T12:00:00Z"),
+          amount: data.amount,
+          transactionId: transactionId
+        }
+      });
 
       // 2. Update the Payable record
       await tx.accountPayable.update({
@@ -304,6 +316,105 @@ export async function processPayablePayment(data: {
     });
   } catch (error: any) {
     console.error("Error processing payable payment:", error);
+    return { success: false, error: error.message };
+  }
+}
+
+export async function processBulkPayablePayment(data: {
+  payableIds: string[];
+  method: string;
+  date: string;
+  reference?: string;
+  bankAccountId?: string;
+}) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return { success: false, error: "No autenticado" };
+    }
+
+    await checkPeriodClosure(new Date(data.date));
+
+    if (data.payableIds.length === 0) {
+      throw new Error("No se han seleccionado cuentas para pagar");
+    }
+
+    return await prisma.$transaction(async (tx) => {
+      // 1. Fetch all selected payables
+      const payables = await tx.accountPayable.findMany({
+        where: { id: { in: data.payableIds } },
+        include: { provider: true }
+      });
+
+      if (payables.length === 0) throw new Error("Cuentas por pagar no encontradas");
+
+      let totalToPay = 0;
+      const payableUpdates = [];
+
+      for (const payable of payables) {
+        const balance = payable.amount - payable.paidAmount;
+        if (balance > 0) {
+          totalToPay += balance;
+          payableUpdates.push({
+            payableId: payable.id,
+            amountToPay: balance
+          });
+        }
+      }
+
+      if (totalToPay <= 0) {
+        throw new Error("Las cuentas seleccionadas no tienen saldo pendiente");
+      }
+
+      // 2. Create ONE Bank Transaction (OUTCOME) if CASH or TRANSFER
+      let transactionId = null;
+      if ((data.method === "CASH" || data.method === "TRANSFER") && data.bankAccountId) {
+        // Use generic concept if multiple providers, or specific if 1
+        const uniqueProviders = new Set(payables.map(p => p.providerId));
+        const providerName = uniqueProviders.size === 1 ? payables[0].provider.legalName : "Varios Proveedores";
+        
+        const txRecord = await tx.transaction.create({
+          data: {
+            bankAccountId: data.bankAccountId,
+            date: new Date(data.date + "T12:00:00Z"),
+            type: "EXPENSE",
+            amount: totalToPay,
+            reference: data.reference,
+            concept: `Pago Múltiple a ${providerName}`,
+            userId: session.user.id
+          }
+        });
+        transactionId = txRecord.id;
+      }
+
+      // 3. Process each payable
+      for (const update of payableUpdates) {
+        // Create PayablePayment for traceability
+        await tx.payablePayment.create({
+          data: {
+            accountPayableId: update.payableId,
+            date: new Date(data.date + "T12:00:00Z"),
+            amount: update.amountToPay,
+            transactionId: transactionId
+          }
+        });
+
+        // Update the Payable record (paid fully)
+        await tx.accountPayable.update({
+          where: { id: update.payableId },
+          data: {
+            paidAmount: { increment: update.amountToPay },
+            status: "PAID"
+          }
+        });
+      }
+
+      revalidatePath("/operaciones/finanzas");
+      revalidatePath("/operaciones/finanzas/cuentas-pagar");
+      return { success: true, count: payableUpdates.length, total: totalToPay };
+    });
+  } catch (error: any) {
+    console.error("Error processing bulk payable payment:", error);
     return { success: false, error: error.message };
   }
 }

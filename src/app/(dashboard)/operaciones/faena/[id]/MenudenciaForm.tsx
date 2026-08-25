@@ -4,12 +4,24 @@ import { useState } from "react";
 import { Plus, X, AlertTriangle } from "lucide-react";
 import { registerMenudencias } from "@/actions/faena";
 
-export function MenudenciaForm({ batchId, maxQuantity }: { batchId: string, maxQuantity: number }) {
+export function MenudenciaForm({ 
+  batchId, 
+  maxQuantity, 
+  existingQuantity = 0,
+  isAdmin = false 
+}: { 
+  batchId: string, 
+  maxQuantity: number,
+  existingQuantity?: number,
+  isAdmin?: boolean
+}) {
   const [isOpen, setIsOpen] = useState(false);
-  const [quantity, setQuantity] = useState<number | "">("");
+  const [quantity, setQuantity] = useState<number | "">(existingQuantity > 0 ? existingQuantity : "");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+
+  const isLocked = existingQuantity > 0 && !isAdmin;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -52,7 +64,7 @@ export function MenudenciaForm({ batchId, maxQuantity }: { batchId: string, maxQ
         className="flex items-center gap-2 bg-amber-500/10 hover:bg-amber-500/20 text-amber-500 font-medium px-4 py-2 rounded-lg transition-colors border border-amber-500/20"
       >
         <Plus className="w-4 h-4" />
-        Cargar Menudencias
+        {existingQuantity > 0 ? `Menudencias (${existingQuantity})` : "Cargar Menudencias"}
       </button>
 
       {isOpen && (
@@ -87,6 +99,13 @@ export function MenudenciaForm({ batchId, maxQuantity }: { batchId: string, maxQ
                 <p className="text-sm text-zinc-400">Total de reses en este lote:</p>
                 <p className="text-2xl font-bold text-amber-500">{maxQuantity}</p>
                 <p className="text-xs text-zinc-500 mt-1">No puedes registrar más menudencias que esta cantidad.</p>
+                
+                {isLocked && (
+                  <div className="mt-3 p-2 bg-rose-500/10 border border-rose-500/20 rounded text-xs text-rose-400 flex items-center gap-1.5">
+                    <AlertTriangle className="w-4 h-4" />
+                    Cantidades ya declaradas. Solo un administrador puede modificar esto.
+                  </div>
+                )}
               </div>
 
               <div>
@@ -99,11 +118,12 @@ export function MenudenciaForm({ batchId, maxQuantity }: { batchId: string, maxQ
                   min="1"
                   max={maxQuantity}
                   value={quantity}
+                  disabled={isLocked || loading}
                   onChange={(e) => {
                     setError("");
                     setQuantity(e.target.value ? Number(e.target.value) : "");
                   }}
-                  className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-4 py-3 text-zinc-100 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500/50"
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-4 py-3 text-zinc-100 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500/50 disabled:opacity-50 disabled:cursor-not-allowed"
                   placeholder="Ej: 15"
                 />
               </div>
@@ -115,15 +135,17 @@ export function MenudenciaForm({ batchId, maxQuantity }: { batchId: string, maxQ
                   disabled={loading}
                   className="flex-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-medium py-3 rounded-lg transition-colors"
                 >
-                  Cancelar
+                  {isLocked ? "Cerrar" : "Cancelar"}
                 </button>
-                <button
-                  type="submit"
-                  disabled={loading || success}
-                  className="flex-1 bg-amber-500 hover:bg-amber-600 text-amber-950 font-bold py-3 rounded-lg transition-colors disabled:opacity-50"
-                >
-                  {loading ? "Registrando..." : "Cargar a Stock"}
-                </button>
+                {!isLocked && (
+                  <button
+                    type="submit"
+                    disabled={loading || success}
+                    className="flex-1 bg-amber-500 hover:bg-amber-600 text-amber-950 font-bold py-3 rounded-lg transition-colors disabled:opacity-50"
+                  >
+                    {loading ? "Registrando..." : (existingQuantity > 0 ? "Actualizar Stock" : "Cargar a Stock")}
+                  </button>
+                )}
               </div>
             </form>
           </div>

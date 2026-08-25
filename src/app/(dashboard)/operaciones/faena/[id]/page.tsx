@@ -25,6 +25,9 @@ export default async function FaenaDetailsPage({ params }: { params: Promise<{ i
           provider: true,
           details: {
             include: { item: true }
+          },
+          inventoryLots: {
+            include: { item: true }
           }
         }
       },
@@ -97,7 +100,12 @@ export default async function FaenaDetailsPage({ params }: { params: Promise<{ i
         </div>
 
         <div className="flex items-center gap-3">
-          <MenudenciaForm batchId={slaughter.batchId} maxQuantity={totalBoughtHeads} />
+          <MenudenciaForm 
+            batchId={slaughter.batchId} 
+            maxQuantity={totalBoughtHeads} 
+            existingQuantity={slaughter.batch.inventoryLots.find(l => l.item.code === "MENUDENCIA-LOTE")?.initialStock || 0}
+            isAdmin={userRole === "ADMIN"}
+          />
           {isOpen ? (
             <CloseFaenaButton 
               slaughterId={slaughter.id} 

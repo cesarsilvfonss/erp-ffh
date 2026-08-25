@@ -457,6 +457,22 @@ model AccountPayable {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  
+  payments  PayablePayment[]
+}
+
+model PayablePayment {
+  id                String         @id @default(cuid())
+  accountPayableId  String
+  accountPayable    AccountPayable @relation(fields: [accountPayableId], references: [id])
+  date              DateTime
+  amount            Float
+  
+  // Enlace directo a la transacción bancaria (que puede ser compartida por varios)
+  transactionId     String?
+  transaction       Transaction?   @relation(fields: [transactionId], references: [id])
+  
+  createdAt         DateTime       @default(now())
 }
 
 model ExpenseCategory {
@@ -505,6 +521,7 @@ model Transaction {
   createdAt DateTime @default(now())
   
   payment   Payment?
+  payablePayments PayablePayment[]
 }
 
 model Loan {
