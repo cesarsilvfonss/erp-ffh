@@ -3,6 +3,8 @@
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 
+import { checkPeriodClosure } from "@/lib/closure";
+
 export async function createSale(data: {
   clientId: string;
   date: string;
@@ -14,6 +16,8 @@ export async function createSale(data: {
   details: { itemId: string; inventoryLotId: string; quantityKg: number; salePrice: number }[];
 }) {
   try {
+    await checkPeriodClosure(new Date(data.date));
+
     return await prisma.$transaction(async (tx) => {
       // 1. Validar Stock para todos los items
       let totalValue = 0;

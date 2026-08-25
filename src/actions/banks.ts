@@ -29,6 +29,8 @@ export async function createBankAccount(data: {
   }
 }
 
+import { checkPeriodClosure } from "@/lib/closure";
+
 export async function adjustBankBalance(data: {
   bankAccountId: string;
   newBalance: number;
@@ -42,6 +44,8 @@ export async function adjustBankBalance(data: {
     if (session?.user?.role !== "ADMIN") {
       throw new Error("Solo el administrador puede ajustar saldos bancarios.");
     }
+
+    await checkPeriodClosure(new Date());
 
     const bank = await prisma.bankAccount.findUnique({
       where: { id: data.bankAccountId },

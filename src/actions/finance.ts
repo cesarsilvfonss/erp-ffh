@@ -5,6 +5,8 @@ import { revalidatePath } from "next/cache";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 
+import { checkPeriodClosure } from "@/lib/closure";
+
 export async function processPayment(data: {
   receivableId: string;
   date: string;
@@ -24,6 +26,8 @@ export async function processPayment(data: {
     if (!session?.user?.id) {
       return { success: false, error: "No autenticado" };
     }
+
+    await checkPeriodClosure(new Date(data.date));
 
     return await prisma.$transaction(async (tx) => {
       const receivable = await tx.accountReceivable.findUnique({
@@ -128,6 +132,8 @@ export async function createLoan(data: {
       return { success: false, error: "No autenticado" };
     }
 
+    await checkPeriodClosure(new Date(data.date));
+
     if (!data.providerId || !data.bankAccountId || data.quotas.length === 0) {
       throw new Error("Faltan datos requeridos para el préstamo");
     }
@@ -192,6 +198,8 @@ export async function processCheckDeposit(checkId: string, bankAccountId: string
       return { success: false, error: "No autenticado" };
     }
 
+    await checkPeriodClosure(new Date());
+
     return await prisma.$transaction(async (tx) => {
       const check = await tx.check.findUnique({
         where: { id: checkId },
@@ -248,6 +256,8 @@ export async function processPayablePayment(data: {
     if (!session?.user?.id) {
       return { success: false, error: "No autenticado" };
     }
+
+    await checkPeriodClosure(new Date(data.date));
 
     return await prisma.$transaction(async (tx) => {
       const payable = await tx.accountPayable.findUnique({

@@ -4,6 +4,8 @@ import { prisma } from "@/lib/prisma";
 import { AnimalCondition, BatchStatus } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 
+import { checkPeriodClosure } from "@/lib/closure";
+
 export async function createBatch(data: {
   date: Date;
   providerId: string;
@@ -11,6 +13,8 @@ export async function createBatch(data: {
   description?: string;
 }) {
   try {
+    await checkPeriodClosure(new Date(data.date));
+
     const batch = await prisma.batch.create({
       data: {
         date: data.date,

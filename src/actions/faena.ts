@@ -2,9 +2,11 @@
 
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
+import { checkPeriodClosure } from "@/lib/closure";
 
 export async function initiateFaena(batchId: string) {
   try {
+    await checkPeriodClosure(new Date());
     const slaughter = await prisma.slaughter.create({
       data: {
         batchId,
@@ -89,6 +91,8 @@ export async function deleteFaenaDetail(id: string, slaughterId: string) {
 
 export async function closeFaena(slaughterId: string, payload: { totalWeight: number, yieldPercent: number }) {
   try {
+    await checkPeriodClosure(new Date());
+
     await prisma.$transaction(async (tx) => {
       const slaughter = await tx.slaughter.update({
         where: { id: slaughterId },
@@ -236,6 +240,7 @@ export async function registerMenudencias(data: {
 }) {
   try {
     const { batchId, quantity } = data;
+    await checkPeriodClosure(new Date());
 
     if (!quantity || isNaN(quantity) || quantity <= 0) {
       throw new Error("La cantidad debe ser mayor a 0.");

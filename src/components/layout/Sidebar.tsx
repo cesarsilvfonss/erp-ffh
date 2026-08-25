@@ -12,6 +12,7 @@ import {
   Wallet,
   ArrowRightLeft,
   Factory,
+  Lock,
   X,
   LogOut,
   UserCog,
@@ -45,6 +46,7 @@ const menuCategories = [
       { icon: Wallet, label: "Cuentas por Pagar", href: "/operaciones/finanzas/cuentas-pagar", roles: ["ADMIN", "ADMINISTRATION"] },
       { icon: CircleDollarSign, label: "Cartera Cheques", href: "/operaciones/finanzas/cheques", roles: ["ADMIN", "ADMINISTRATION"] },
       { icon: Landmark, label: "Préstamos", href: "/operaciones/finanzas/prestamos", roles: ["ADMIN"] },
+      { icon: Lock, label: "Cierre Mensual", href: "/operaciones/finanzas/cierre-mensual", roles: ["ADMIN"] },
     ]
   },
   {

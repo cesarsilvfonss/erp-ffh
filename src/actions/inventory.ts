@@ -3,6 +3,8 @@
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 
+import { checkPeriodClosure } from "@/lib/closure";
+
 export async function registerMerma(data: {
   inventoryLotId: string;
   quantityKg: number;
@@ -14,6 +16,8 @@ export async function registerMerma(data: {
     if (!quantityKg || isNaN(quantityKg) || quantityKg <= 0) {
       throw new Error("La cantidad debe ser mayor a 0.");
     }
+
+    await checkPeriodClosure(new Date());
 
     await prisma.$transaction(async (tx) => {
       const lot = await tx.inventoryLot.findUnique({
