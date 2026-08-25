@@ -24,7 +24,9 @@ export default async function DashboardPage() {
   }, 0);
 
   // 2. Valor del Inventario
-  const inventoryLots = await prisma.inventoryLot.findMany();
+  const inventoryLots = await prisma.inventoryLot.findMany({
+    where: { currentStock: { gte: 0.2 } }
+  });
   const inventoryValue = inventoryLots.reduce((acc, lot) => {
     return acc + (lot.currentStock * lot.unitCost);
   }, 0);

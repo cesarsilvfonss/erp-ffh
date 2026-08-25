@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 export default async function InventoryPage() {
   const inventoryLots = await prisma.inventoryLot.findMany({
     where: {
-      currentStock: { gt: 0 } // Sólo mostrar lotes con stock
+      currentStock: { gte: 0.2 } // Sólo mostrar lotes con stock válido
     },
     include: {
       item: true,

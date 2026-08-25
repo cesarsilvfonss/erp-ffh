@@ -38,7 +38,9 @@ export async function createOrUpdateClosure(year: number, month: number, isFinal
   const supplierBalance = payables.reduce((acc, p) => acc + (p.amount - p.paidAmount), 0);
 
   // 5. Stock Value
-  const inventoryLots = await prisma.inventoryLot.findMany();
+  const inventoryLots = await prisma.inventoryLot.findMany({
+    where: { currentStock: { gte: 0.2 } }
+  });
   const stockValue = inventoryLots.reduce((acc, lot) => acc + (lot.currentStock * lot.unitCost), 0);
 
   // 6. Total Capital
@@ -111,7 +113,9 @@ export async function getLiveCapital() {
   const payables = await prisma.accountPayable.findMany({ where: { status: { not: "PAID" } } });
   const supplierBalance = payables.reduce((acc, p) => acc + (p.amount - p.paidAmount), 0);
 
-  const inventoryLots = await prisma.inventoryLot.findMany();
+  const inventoryLots = await prisma.inventoryLot.findMany({
+    where: { currentStock: { gte: 0.2 } }
+  });
   const stockValue = inventoryLots.reduce((acc, lot) => acc + (lot.currentStock * lot.unitCost), 0);
 
   const totalCapital = bankBalance + checksBalance + clientBalance + stockValue - supplierBalance;

@@ -18,7 +18,7 @@ export default async function NewSalePage() {
   });
 
   const inventoryLots = await prisma.inventoryLot.findMany({
-    where: { currentStock: { gt: 0 } },
+    where: { currentStock: { gte: 0.2 } },
     include: { item: true, batch: true },
     orderBy: { item: { name: "asc" } },
   });
