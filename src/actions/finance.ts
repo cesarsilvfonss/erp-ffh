@@ -412,6 +412,9 @@ export async function processBulkPayablePayment(data: {
       revalidatePath("/operaciones/finanzas");
       revalidatePath("/operaciones/finanzas/cuentas-pagar");
       return { success: true, count: payableUpdates.length, total: totalToPay };
+    }, {
+      maxWait: 10000, // 10s max wait to connect
+      timeout: 60000, // 60s timeout for the entire transaction (since bulk takes time)
     });
   } catch (error: any) {
     console.error("Error processing bulk payable payment:", error);
