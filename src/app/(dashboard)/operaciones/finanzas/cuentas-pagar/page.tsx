@@ -14,6 +14,20 @@ export default async function CuentasPagarPage() {
     include: { currency: true }
   });
 
+  const expenseIds = payables.filter(p => p.type === 'EXPENSE').map(p => p.sourceId);
+  const expenses = await prisma.expense.findMany({
+    where: { id: { in: expenseIds } },
+    include: { category: true, batch: true }
+  });
+
+  const payablesWithDetails = payables.map(p => {
+    if (p.type === 'EXPENSE') {
+      const exp = expenses.find(e => e.id === p.sourceId);
+      return { ...p, expenseDetail: exp };
+    }
+    return p;
+  });
+
   return (
     <div className="space-y-6">
       <div>
@@ -21,7 +35,7 @@ export default async function CuentasPagarPage() {
         <p className="text-zinc-400 text-sm mt-1">Gestión de pagos a proveedores, faena, y préstamos.</p>
       </div>
 
-      <PayableList payables={payables} bankAccounts={bankAccounts} />
+      <PayableList payables={payablesWithDetails} bankAccounts={bankAccounts} />
     </div>
   );
 }

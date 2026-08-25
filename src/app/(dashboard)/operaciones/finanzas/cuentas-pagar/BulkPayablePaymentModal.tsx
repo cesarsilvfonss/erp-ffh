@@ -112,7 +112,7 @@ export function BulkPayablePaymentModal({
                 <option value="">Seleccione cuenta...</option>
                 {banks.map((bank: any) => (
                   <option key={bank.id} value={bank.id}>
-                    {bank.name} ({bank.currency})
+                    {bank.bankName} - {bank.accountName} ({bank.currency?.code})
                   </option>
                 ))}
               </select>

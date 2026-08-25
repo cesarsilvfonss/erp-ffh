@@ -147,9 +147,19 @@ export function PayableList({ payables, bankAccounts }: { payables: any[], bankA
                       </span>
                     )}
                     {payable.type === 'EXPENSE' && (
-                      <span className="px-2 py-1 rounded text-xs font-bold bg-zinc-700/50 text-zinc-300 border border-zinc-600/50">
-                        Gasto
-                      </span>
+                      <div className="flex flex-col items-start gap-1">
+                        <span className="px-2 py-1 rounded text-xs font-bold bg-zinc-700/50 text-zinc-300 border border-zinc-600/50">
+                          Gasto
+                        </span>
+                        {payable.expenseDetail && (
+                          <div className="text-xs text-zinc-400">
+                            <p>{payable.expenseDetail.category?.name}</p>
+                            {payable.expenseDetail.batch && (
+                              <p className="text-[10px] text-zinc-500 mt-0.5">Lote #{payable.expenseDetail.batch.batchNumber}</p>
+                            )}
+                          </div>
+                        )}
+                      </div>
                     )}
                   </td>
                   <td className="px-6 py-4 text-right font-mono">{payable.amount.toLocaleString()}</td>
