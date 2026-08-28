@@ -1,34 +1,14 @@
-import { prisma } from "@/lib/prisma";
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/auth";
-import { redirect } from "next/navigation";
-import { LotReportClient } from "./LotReportClient";
+import { prisma } from "./src/lib/prisma";
 
-export const dynamic = "force-dynamic";
-
-export default async function LotReportPage({ searchParams }: { searchParams: Promise<{ batchId?: string }> }) {
-  const session = await getServerSession(authOptions);
-  
-  if (!session) {
-    redirect("/login");
-  }
-
-  if (session.user.role !== "ADMIN" && session.user.role !== "ADMINISTRATION") {
-    redirect("/");
-  }
-
-  const { batchId } = await searchParams;
-
-  // Obtener todos los lotes para el selector
-  const allBatches = await prisma.batch.findMany({
-    orderBy: { createdAt: "desc" },
-    include: { provider: true }
+async function run() {
+  const lotesToTest = await prisma.batch.findMany({
+    where: { batchNumber: { in: [2, 5, 6] } }
   });
 
-  let reportData = null;
-
-  if (batchId) {
-    // 1. Lote y Compra (Inversión)
+  for (const lote of lotesToTest) {
+    console.log(`Testing lote ${lote.batchNumber} (ID: ${lote.id})...`);
+    const batchId = lote.id;
+    
     const batch = await prisma.batch.findUnique({
       where: { id: batchId },
       include: {
@@ -50,7 +30,6 @@ export default async function LotReportPage({ searchParams }: { searchParams: Pr
     });
 
     if (batch) {
-      // 2. Calcular Inversión Inicial (Compra)
       let purchaseQuantity = 0;
       let purchaseWeight = 0;
       let purchaseTotalCost = 0;
@@ -64,7 +43,6 @@ export default async function LotReportPage({ searchParams }: { searchParams: Pr
         purchaseWeight = batch.details.reduce((acc: number, d: any) => acc + d.netWeight, 0);
       }
       
-      // 3. Faena y Rendimiento
       let slaughterWeight = 0;
       let performance = 0;
       if (batch.slaughter) {
@@ -72,7 +50,6 @@ export default async function LotReportPage({ searchParams }: { searchParams: Pr
         performance = batch.slaughter.performance;
       }
 
-      // 4. Ventas y Mermas desde Inventario
       let totalKgSold = 0;
       let totalSalesRevenue = 0;
       let totalKgMermas = 0;
@@ -84,11 +61,9 @@ export default async function LotReportPage({ searchParams }: { searchParams: Pr
       const batchAny = batch as any;
 
       batchAny.inventoryLots.forEach((lot: any) => {
-        // Stock actual
         totalStockKg += lot.currentStock;
         totalStockValue += (lot.currentStock * lot.unitCost);
 
-        // Ventas
         lot.saleDetails.forEach((sd: any) => {
           if (sd.sale.status !== "CANCELLED") {
             totalKgSold += sd.quantityKg;
@@ -104,12 +79,11 @@ export default async function LotReportPage({ searchParams }: { searchParams: Pr
               quantity: sd.quantityKg,
               price: sd.salePrice,
               total: saleTotal,
-              cost: sd.quantityKg * lot.unitCost // costo proporcional de la venta
+              cost: sd.quantityKg * lot.unitCost
             });
           }
         });
 
-        // Mermas
         lot.movements.forEach((mov: any) => {
           if (mov.type === "OUT" && mov.concept.includes("MERMA")) {
             totalKgMermas += mov.quantity;
@@ -124,57 +98,42 @@ export default async function LotReportPage({ searchParams }: { searchParams: Pr
         });
       });
 
-      // 5. Gastos del Lote
       const totalExpenses = batchAny.expenses.reduce((acc: number, e: any) => acc + e.amount, 0);
       const totalMermasCost = mermasList.reduce((acc, m) => acc + m.cost, 0);
       const costOfSoldGoods = salesList.reduce((acc, s) => acc + s.cost, 0);
 
-      // 6. Resultado Contable (Opción 1: Solo lo Realizado)
-      // Resultado Bruto = Ingreso Ventas - Costo de la Carne Vendida
       const grossResult = totalSalesRevenue - costOfSoldGoods;
-      
-      // Resultado Neto = Resultado Bruto - Gastos (asumidos enteros por el lote) - Costo de Mermas
       const netResult = grossResult - totalExpenses - totalMermasCost;
 
-      reportData = {
-        batch,
-        purchase: {
-          quantity: purchaseQuantity,
-          weight: purchaseWeight,
-          totalCost: purchaseTotalCost,
-          avgCost: purchaseWeight > 0 ? purchaseTotalCost / purchaseWeight : 0
-        },
-        slaughter: {
-          weight: slaughterWeight,
-          performance: performance
-        },
-        inventory: {
-          stockKg: totalStockKg,
-          stockValue: totalStockValue,
-          mermasKg: totalKgMermas,
-          mermasCost: totalMermasCost
-        },
-        sales: {
-          totalKg: totalKgSold,
-          revenue: totalSalesRevenue,
-          costOfGoods: costOfSoldGoods,
-          list: salesList
-        },
-        expenses: {
-          total: totalExpenses,
-          list: batch.expenses
-        },
-        results: {
-          grossResult,
-          netResult
-        }
+      const reportData = {
+        purchaseQuantity,
+        purchaseWeight,
+        purchaseTotalCost,
+        avgCost: purchaseWeight > 0 ? purchaseTotalCost / purchaseWeight : 0,
+        slaughterWeight,
+        performance,
+        totalStockKg,
+        totalStockValue,
+        totalKgMermas,
+        totalMermasCost,
+        totalKgSold,
+        totalSalesRevenue,
+        costOfSoldGoods,
+        totalExpenses,
+        grossResult,
+        netResult
       };
+
+      console.log(`Report Data for Lote ${lote.batchNumber}:`, JSON.stringify(reportData, null, 2));
+      
+      // Check for NaNs
+      for (const [k, v] of Object.entries(reportData)) {
+        if (Number.isNaN(v)) {
+          console.error(`ERROR: Field ${k} is NaN in Lote ${lote.batchNumber}!`);
+        }
+      }
     }
   }
-
-  return (
-    <div className="max-w-7xl mx-auto space-y-6">
-      <LotReportClient allBatches={allBatches} reportData={reportData} />
-    </div>
-  );
 }
+
+run().catch(console.error).finally(() => process.exit(0));
