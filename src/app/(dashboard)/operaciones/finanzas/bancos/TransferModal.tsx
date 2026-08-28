@@ -56,7 +56,7 @@ export function TransferModal({ banks }: { banks: any[] }) {
       setReference("");
       router.refresh();
     } else {
-      setError(res.error as string);
+      setError("error" in res ? (res.error as string) : "Ocurrió un error en la transferencia");
     }
   }
 
