@@ -217,9 +217,15 @@ export function CapitalAnalysisClient({
             </tr>
             <tr><td colSpan={2} className="h-6"></td></tr>
             <tr className="hover:bg-zinc-800/20 transition-colors">
-              <td className="px-6 py-4 font-semibold text-zinc-300 uppercase">Stock</td>
+              <td className="px-6 py-4 font-semibold text-zinc-300 uppercase">Stock (Cámara)</td>
               <td className="px-6 py-4 text-right text-zinc-100 font-medium border-l border-zinc-800/50">
                 {formatCurrency(data.stockValue)}
+              </td>
+            </tr>
+            <tr className="hover:bg-zinc-800/20 transition-colors">
+              <td className="px-6 py-4 font-semibold text-zinc-300 uppercase">Stock (En Pie)</td>
+              <td className="px-6 py-4 text-right text-zinc-100 font-medium border-l border-zinc-800/50">
+                {formatCurrency(data.liveStockValue || 0)}
               </td>
             </tr>
           </tbody>

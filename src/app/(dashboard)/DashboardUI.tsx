@@ -6,7 +6,8 @@ import Link from "next/link";
 
 export function DashboardUI({ 
   bankBalance, 
-  inventoryValue, 
+  inventoryValue,
+  liveStockValue, 
   walletChecks,
   receivables,
   payables,
@@ -14,6 +15,7 @@ export function DashboardUI({
 }: {
   bankBalance: number;
   inventoryValue: number;
+  liveStockValue: number;
   walletChecks: number;
   receivables: number;
   payables: number;
@@ -25,13 +27,14 @@ export function DashboardUI({
 
   const metrics = [
     { label: "Saldo Bancario", value: formatCurrency(bankBalance), icon: CircleDollarSign, trend: "Actualizado", trendColor: "text-emerald-400", href: "/operaciones/finanzas/bancos" },
-    { label: "Valor Inventario", value: formatCurrency(inventoryValue), icon: Beef, trend: "Costo total en stock", trendColor: "text-emerald-400", href: "/inventario" },
+    { label: "Stock (Cámara)", value: formatCurrency(inventoryValue), icon: Beef, trend: "Costo total faenado", trendColor: "text-emerald-400", href: "/inventario" },
+    { label: "Stock (En Pie)", value: formatCurrency(liveStockValue), icon: Beef, trend: "Lotes sin faenar", trendColor: "text-emerald-400", href: "/operaciones/lotes" },
     { label: "Cheques en Cartera", value: formatCurrency(walletChecks), icon: CircleDollarSign, trend: "Por depositar", trendColor: "text-emerald-400", href: "/operaciones/finanzas/cheques" },
     { label: "Cuentas por Cobrar", value: formatCurrency(receivables), icon: Users, trend: "Saldo a favor", trendColor: "text-emerald-400", href: "/operaciones/finanzas/cuentas-cobrar" },
     { label: "Cuentas por Pagar", value: formatCurrency(payables), icon: Users, trend: "Deudas", trendColor: "text-amber-400", href: "/operaciones/finanzas/cuentas-pagar" },
   ];
 
-  const currentTotalCapital = bankBalance + walletChecks + receivables + inventoryValue - payables;
+  const currentTotalCapital = bankBalance + walletChecks + receivables + inventoryValue + liveStockValue - payables;
   const capitalVariation = currentTotalCapital - previousCapital;
   const growthPercentage = previousCapital > 0 ? (capitalVariation / previousCapital) * 100 : 0;
 
@@ -44,25 +47,25 @@ export function DashboardUI({
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
         {metrics.map((metric, index) => (
           <Link key={metric.label} href={metric.href} className="block">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, delay: index * 0.1 }}
-              className="bg-zinc-900/50 border border-zinc-800 p-5 rounded-xl hover:bg-zinc-800 transition-colors group cursor-pointer h-full"
+              className="bg-zinc-900/50 border border-zinc-800 p-4 rounded-xl hover:bg-zinc-800 transition-colors group cursor-pointer h-full"
             >
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-zinc-400 text-sm font-medium">{metric.label}</p>
-                  <h3 className="text-xl font-bold text-zinc-100 mt-2">{metric.value}</h3>
+                  <p className="text-zinc-400 text-xs font-medium">{metric.label}</p>
+                  <h3 className="text-lg font-bold text-zinc-100 mt-1">{metric.value}</h3>
                 </div>
-                <div className="p-2 bg-zinc-800 rounded-lg group-hover:bg-zinc-700 transition-colors">
-                  <metric.icon className="w-5 h-5 text-emerald-400" />
+                <div className="p-1.5 bg-zinc-800 rounded-lg group-hover:bg-zinc-700 transition-colors">
+                  <metric.icon className="w-4 h-4 text-emerald-400" />
                 </div>
               </div>
-              <p className={`text-xs mt-4 font-medium ${metric.trendColor}`}>
+              <p className={`text-xs mt-3 font-medium ${metric.trendColor}`}>
                 {metric.trend}
               </p>
             </motion.div>
@@ -96,8 +99,12 @@ export function DashboardUI({
                   <span className="text-emerald-400 font-bold">{formatCurrency(receivables)}</span>
                 </div>
                 <div className="flex justify-between items-center border-b border-zinc-800 pb-3">
-                  <span className="text-zinc-400 font-medium">Stock (Inventario)</span>
+                  <span className="text-zinc-400 font-medium">Stock (Cámara)</span>
                   <span className="text-emerald-400 font-bold">{formatCurrency(inventoryValue)}</span>
+                </div>
+                <div className="flex justify-between items-center border-b border-zinc-800 pb-3">
+                  <span className="text-zinc-400 font-medium">Stock (En Pie)</span>
+                  <span className="text-emerald-400 font-bold">{formatCurrency(liveStockValue)}</span>
                 </div>
                 <div className="flex justify-between items-center border-b border-zinc-800 pb-3">
                   <span className="text-zinc-400 font-medium">Saldo de Proveedores</span>

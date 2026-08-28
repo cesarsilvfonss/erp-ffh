@@ -48,6 +48,17 @@ export default async function DashboardPage() {
   });
   const payables = payablesRecords.reduce((acc, pay) => acc + (pay.amount - pay.paidAmount), 0);
 
+  // 4.1 Stock en Pie (Lotes cerrados sin faenar y no vendidos en pie)
+  const liveStockClosures = await prisma.batchClosure.findMany({
+    where: {
+      batch: {
+        inventoryLots: { none: {} },
+        isLiveSale: false
+      }
+    }
+  });
+  const liveStockValue = liveStockClosures.reduce((acc, closure) => acc + closure.totalValue, 0);
+
   // 5. Capital Anterior (Último Cierre)
   const lastClosure = await prisma.monthlyClosure.findFirst({
     where: { status: 'CLOSED' },
@@ -62,6 +73,7 @@ export default async function DashboardPage() {
     <DashboardUI 
       bankBalance={bankBalance}
       inventoryValue={inventoryValue}
+      liveStockValue={liveStockValue}
       walletChecks={walletChecks}
       receivables={receivables}
       payables={payables}

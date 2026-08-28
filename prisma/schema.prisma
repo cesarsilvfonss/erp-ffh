@@ -554,6 +554,7 @@ model MonthlyClosure {
   clientBalance     Float
   supplierBalance   Float
   stockValue        Float
+  liveStockValue    Float     @default(0)
   totalCapital      Float
 
   @@unique([year, month])

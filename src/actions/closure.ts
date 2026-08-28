@@ -43,8 +43,19 @@ export async function createOrUpdateClosure(year: number, month: number, isFinal
   });
   const stockValue = inventoryLots.reduce((acc, lot) => acc + (lot.currentStock * lot.unitCost), 0);
 
+  // 5.1 Live Stock Value
+  const liveStockClosures = await prisma.batchClosure.findMany({
+    where: {
+      batch: {
+        inventoryLots: { none: {} },
+        isLiveSale: false
+      }
+    }
+  });
+  const liveStockValue = liveStockClosures.reduce((acc, closure) => acc + closure.totalValue, 0);
+
   // 6. Total Capital
-  const totalCapital = bankBalance + checksBalance + clientBalance + stockValue - supplierBalance;
+  const totalCapital = bankBalance + checksBalance + clientBalance + stockValue + liveStockValue - supplierBalance;
 
   // Upsert the closure
   const closure = await prisma.monthlyClosure.upsert({
@@ -57,6 +68,7 @@ export async function createOrUpdateClosure(year: number, month: number, isFinal
       clientBalance,
       supplierBalance,
       stockValue,
+      liveStockValue,
       totalCapital,
       status: isFinalClose ? "CLOSED" : "DRAFT",
       closedAt: isFinalClose ? new Date() : undefined,
@@ -70,6 +82,7 @@ export async function createOrUpdateClosure(year: number, month: number, isFinal
       clientBalance,
       supplierBalance,
       stockValue,
+      liveStockValue,
       totalCapital,
       status: isFinalClose ? "CLOSED" : "DRAFT",
       closedAt: isFinalClose ? new Date() : undefined,
@@ -118,7 +131,17 @@ export async function getLiveCapital() {
   });
   const stockValue = inventoryLots.reduce((acc, lot) => acc + (lot.currentStock * lot.unitCost), 0);
 
-  const totalCapital = bankBalance + checksBalance + clientBalance + stockValue - supplierBalance;
+  const liveStockClosures = await prisma.batchClosure.findMany({
+    where: {
+      batch: {
+        inventoryLots: { none: {} },
+        isLiveSale: false
+      }
+    }
+  });
+  const liveStockValue = liveStockClosures.reduce((acc, closure) => acc + closure.totalValue, 0);
+
+  const totalCapital = bankBalance + checksBalance + clientBalance + stockValue + liveStockValue - supplierBalance;
 
   return {
     bankBalance,
@@ -126,6 +149,7 @@ export async function getLiveCapital() {
     clientBalance,
     supplierBalance,
     stockValue,
+    liveStockValue,
     totalCapital
   };
 }
