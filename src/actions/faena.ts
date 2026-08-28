@@ -247,23 +247,24 @@ export async function registerMenudencias(data: {
     }
 
     await prisma.$transaction(async (tx) => {
-      // Validar Lote y cantidad de reses
       const batch = await tx.batch.findUnique({
         where: { id: batchId },
-        include: { details: true }
+        include: { details: true, slaughter: { include: { details: true } } }
       });
 
       if (!batch) {
         throw new Error("Lote no encontrado.");
       }
 
-      const totalHeads = batch.details.reduce((acc, d) => acc + d.quantity, 0);
+      let totalHeads = batch.details.reduce((acc, d) => acc + d.quantity, 0);
+      if (batch.isHookPurchase && batch.slaughter) {
+        totalHeads = Math.ceil(batch.slaughter.details.length / 2);
+      }
 
-      if (quantity > totalHeads) {
+      if (quantity > totalHeads && totalHeads > 0) { // If totalHeads is 0 (just started hook purchase), we might bypass or let it be. Actually, totalHeads is 0 at the start.
         throw new Error(`La cantidad de menudencias (${quantity}) no puede superar la cantidad de animales del lote (${totalHeads}).`);
       }
 
-      // Buscar o crear el Artículo "Lote de Menudencias"
       let item = await tx.item.findUnique({
         where: { code: "MENUDENCIA-LOTE" }
       });
@@ -281,7 +282,6 @@ export async function registerMenudencias(data: {
         });
       }
 
-      // Validar si ya existe un registro de menudencias para este lote
       const existingLot = await tx.inventoryLot.findFirst({
         where: {
           batchId: batchId,
@@ -290,7 +290,6 @@ export async function registerMenudencias(data: {
       });
 
       if (existingLot) {
-        // Actualizar el stock existente
         await tx.inventoryLot.update({
           where: { id: existingLot.id },
           data: {
@@ -299,7 +298,6 @@ export async function registerMenudencias(data: {
           }
         });
 
-        // Registrar movimiento
         await tx.inventoryMovement.create({
           data: {
             inventoryLotId: existingLot.id,
@@ -311,18 +309,16 @@ export async function registerMenudencias(data: {
           }
         });
       } else {
-        // Crear nuevo InventoryLot
         const newLot = await tx.inventoryLot.create({
           data: {
             batchId: batchId,
             itemId: item.id,
             initialStock: quantity,
             currentStock: quantity,
-            unitCost: 0 // Las menudencias tienen costo cero
+            unitCost: 0 // Menudencias gratis como premio
           }
         });
 
-        // Registrar movimiento
         await tx.inventoryMovement.create({
           data: {
             inventoryLotId: newLot.id,
@@ -345,3 +341,156 @@ export async function registerMenudencias(data: {
   }
 }
 
+export async function createHookPurchase(data: {
+  date: Date;
+  providerId: string;
+  slaughterhouseId?: string;
+  description?: string;
+}) {
+  try {
+    await checkPeriodClosure(new Date(data.date));
+
+    const result = await prisma.$transaction(async (tx) => {
+      const batch = await tx.batch.create({
+        data: {
+          date: data.date,
+          providerId: data.providerId,
+          slaughterhouseId: data.slaughterhouseId?.trim() || null,
+          description: data.description?.toUpperCase(),
+          status: "IN_SLAUGHTER",
+          isHookPurchase: true,
+        },
+      });
+
+      const slaughter = await tx.slaughter.create({
+        data: {
+          batchId: batch.id,
+          date: new Date(),
+        }
+      });
+      return slaughter;
+    });
+    
+    revalidatePath("/operaciones/faena");
+    return { success: true, data: result };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function closeHookPurchase(slaughterId: string, payload: { 
+  prices: { itemId: string; pricePerKg: number; liquidWeight: number }[]
+}) {
+  try {
+    await checkPeriodClosure(new Date());
+
+    await prisma.$transaction(async (tx) => {
+      const slaughter = await tx.slaughter.findUnique({
+        where: { id: slaughterId },
+        include: { details: true, batch: true }
+      });
+      if (!slaughter) throw new Error("Faena no encontrada");
+
+      const totalWeight = slaughter.details.reduce((acc, d) => acc + d.weight, 0);
+      let totalValue = 0;
+
+      payload.prices.forEach(segment => {
+        totalValue += segment.liquidWeight * segment.pricePerKg;
+      });
+
+      // 1. Update Slaughter
+      await tx.slaughter.update({
+        where: { id: slaughterId },
+        data: { 
+          totalCarcassWeight: totalWeight,
+          performance: 100 
+        }
+      });
+
+      // 2. Create BatchClosure
+      const closure = await tx.batchClosure.create({
+        data: {
+          batchId: slaughter.batchId,
+          totalHeads: Math.ceil(slaughter.details.length / 2),
+          totalGrossWeight: totalWeight,
+          discountWeight: 0,
+          totalLiquidWeight: totalWeight,
+          totalValue,
+          discountAmount: 0,
+          netValue: totalValue,
+          prices: {
+            create: payload.prices.map(p => ({
+              itemId: p.itemId,
+              liquidWeight: p.liquidWeight,
+              pricePerKg: p.pricePerKg
+            }))
+          }
+        },
+      });
+
+      // 3. Create InventoryLots
+      const weightPerItem = slaughter.details.reduce((acc, d) => {
+        if (!acc[d.itemId]) acc[d.itemId] = 0;
+        acc[d.itemId] += d.weight;
+        return acc;
+      }, {} as Record<string, number>);
+
+      for (const [itemId, totalItemWeight] of Object.entries(weightPerItem)) {
+        let totalPaidForItem = 0;
+        const pricesForItem = payload.prices.filter((p: any) => p.itemId === itemId);
+        totalPaidForItem = pricesForItem.reduce((sum: number, p: any) => sum + (p.liquidWeight * p.pricePerKg), 0);
+        
+        const unitCost = totalItemWeight > 0 ? totalPaidForItem / totalItemWeight : 0;
+
+        const inventoryLot = await tx.inventoryLot.create({
+          data: {
+            batchId: slaughter.batchId,
+            itemId: itemId,
+            initialStock: totalItemWeight, // Gancho
+            currentStock: totalItemWeight,
+            unitCost: unitCost
+          }
+        });
+
+        await tx.inventoryMovement.create({
+          data: {
+            inventoryLotId: inventoryLot.id,
+            itemId: itemId,
+            type: "IN",
+            quantity: totalItemWeight,
+            referenceId: slaughterId,
+            concept: `Compra al Gancho Lote #${slaughter.batch.batchNumber}`
+          }
+        });
+      }
+
+      // 4. Create AccountPayable
+      const dueDate = new Date();
+      dueDate.setDate(dueDate.getDate() + 7);
+
+      await tx.accountPayable.create({
+        data: {
+          sourceId: slaughter.batchId,
+          type: "BATCH_PURCHASE",
+          providerId: slaughter.batch.providerId,
+          amount: totalValue,
+          status: "PENDING",
+          dueDate,
+        }
+      });
+
+      // 5. Update Batch Status
+      await tx.batch.update({
+        where: { id: slaughter.batchId },
+        data: { status: "CLOSED" } 
+      });
+    });
+
+    revalidatePath("/operaciones/faena");
+    revalidatePath(`/operaciones/faena/${slaughterId}`);
+
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}

@@ -6,14 +6,15 @@ import { LiveSaleButton } from "./LiveSaleButton";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 
+import { NewHookPurchaseModal } from "./NewHookPurchaseModal";
+
 export const dynamic = "force-dynamic";
 
 export default async function FaenaListPage() {
   const session = await getServerSession(authOptions);
   const userRole = session?.user?.role || "WEIGHER";
   const isAdmin = userRole === "ADMIN" || userRole === "ADMINISTRATION";
-  // Obtenemos los lotes que tienen estado IN_SLAUGHTER, IN_SALE, CLOSED
-  // O que tienen un slaughter asociado
+  
   const slaughters = await prisma.slaughter.findMany({
     orderBy: { createdAt: "desc" },
     include: {
@@ -32,9 +33,9 @@ export default async function FaenaListPage() {
 
   const availableBatches = await prisma.batch.findMany({
     where: { 
-      status: "CLOSED", // Asumimos que un lote cerrado de compra está listo para faenar
-      slaughter: null,  // Que no tenga faena iniciada
-      isLiveSale: false // Que no haya sido mandado a Venta en Pie
+      status: "CLOSED",
+      slaughter: null,
+      isLiveSale: false
     },
     include: {
       provider: true,
@@ -43,11 +44,16 @@ export default async function FaenaListPage() {
     orderBy: { date: "desc" }
   });
 
+  const providers = await prisma.provider.findMany();
+
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-zinc-100">Módulo de Faena</h1>
-        <p className="text-zinc-400 text-sm mt-1">Gestión del romaneo de planta y rendimiento al gancho.</p>
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-2xl font-bold text-zinc-100">Módulo de Faena</h1>
+          <p className="text-zinc-400 text-sm mt-1">Gestión del romaneo de planta y rendimiento al gancho.</p>
+        </div>
+        <NewHookPurchaseModal providers={providers} />
       </div>
 
       {availableBatches.length > 0 && (

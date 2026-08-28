@@ -6,7 +6,7 @@ export const dynamic = "force-dynamic";
 
 export default async function BatchesPage() {
   const batches = await prisma.batch.findMany({
-    include: { provider: true, slaughterhouse: true, details: true },
+    include: { provider: true, slaughterhouse: true, details: true, slaughter: { include: { details: true } } },
     orderBy: { createdAt: "desc" },
   });
 
@@ -55,14 +55,20 @@ export default async function BatchesPage() {
                 <th className="px-6 py-3 font-medium">Fecha</th>
                 <th className="px-6 py-3 font-medium">Proveedor</th>
                 <th className="px-6 py-3 font-medium">Cabezas</th>
+                <th className="px-6 py-3 font-medium">Origen</th>
                 <th className="px-6 py-3 font-medium">Estado</th>
                 <th className="px-6 py-3 font-medium text-right">Acciones</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-800 text-zinc-300">
               {batches.map((batch) => {
-                const totalHeads = batch.details.reduce((acc, d) => acc + d.quantity, 0);
-                
+                const isHook = batch.isHookPurchase;
+                const linkHref = isHook && batch.slaughter ? `/operaciones/faena/${batch.slaughter.id}` : `/operaciones/lotes/${batch.id}`;
+                let totalHeads = batch.details.reduce((acc, d) => acc + d.quantity, 0);
+                if (isHook && batch.slaughter) {
+                  totalHeads = Math.ceil(batch.slaughter.details.length / 2);
+                }
+
                 return (
                   <tr key={batch.id} className="hover:bg-zinc-800/50 transition-colors group">
                     <td className="px-6 py-4 font-medium text-zinc-100">
@@ -78,10 +84,17 @@ export default async function BatchesPage() {
                       )}
                     </td>
                     <td className="px-6 py-4">{totalHeads}</td>
+                    <td className="px-6 py-4">
+                      {isHook ? (
+                        <span className="text-rose-400 text-xs border border-rose-500/30 bg-rose-500/10 px-2 py-1 rounded-full whitespace-nowrap">🥩 Compra al Gancho</span>
+                      ) : (
+                        <span className="text-emerald-400 text-xs border border-emerald-500/30 bg-emerald-500/10 px-2 py-1 rounded-full whitespace-nowrap">🌿 Compra en Finca</span>
+                      )}
+                    </td>
                     <td className="px-6 py-4">{getStatusBadge(batch.status)}</td>
                     <td className="px-6 py-4 text-right">
                       <Link 
-                        href={`/operaciones/lotes/${batch.id}`}
+                        href={linkHref}
                         className="inline-flex p-1.5 text-zinc-400 hover:text-emerald-400 rounded-md hover:bg-emerald-400/10 transition-colors"
                       >
                         <Eye className="w-4 h-4" />

@@ -154,6 +154,7 @@ model Batch {
   slaughterhouseId String?
   slaughterhouse   Provider?   @relation("BatchSlaughterhouse", fields: [slaughterhouseId], references: [id])
   isLiveSale       Boolean     @default(false)
+  isHookPurchase   Boolean     @default(false) // Nueva modalidad
   createdAt        DateTime    @default(now())
   updatedAt        DateTime    @updatedAt
 
