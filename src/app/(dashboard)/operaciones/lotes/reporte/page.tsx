@@ -33,7 +33,11 @@ export default async function LotReportPage({ searchParams }: { searchParams: Pr
       where: { id: batchId },
       include: {
         provider: true,
-        closure: true,
+        closure: {
+          include: {
+            prices: { include: { item: true } }
+          }
+        },
         details: { include: { item: true } },
         expenses: { include: { category: true } },
         slaughter: { include: { details: { include: { item: true } } } },
@@ -70,6 +74,56 @@ export default async function LotReportPage({ searchParams }: { searchParams: Pr
       if (batch.slaughter) {
         slaughterWeight = batch.slaughter.totalCarcassWeight;
         performance = batch.slaughter.performance;
+      }
+
+      const purchaseBreakdown: any[] = [];
+      if (batch.closure) {
+        batch.closure.prices.forEach((p: any) => {
+          purchaseBreakdown.push({
+            itemName: p.item.name,
+            weight: p.liquidWeight,
+            totalCost: p.liquidWeight * p.pricePerKg,
+            avgCost: p.pricePerKg
+          });
+        });
+      } else {
+        const groups: Record<string, any> = {};
+        batch.details.forEach((d: any) => {
+          const name = d.item.name;
+          if (!groups[name]) groups[name] = { weight: 0 };
+          groups[name].weight += d.netWeight;
+        });
+        Object.entries(groups).forEach(([name, data]) => {
+          purchaseBreakdown.push({
+            itemName: name,
+            weight: data.weight,
+            totalCost: 0,
+            avgCost: 0
+          });
+        });
+      }
+
+      const slaughterBreakdown: any[] = [];
+      if (batch.slaughter) {
+        const groups: Record<string, any> = {};
+        batch.slaughter.details.forEach((d: any) => {
+          const name = d.item.name;
+          if (!groups[name]) groups[name] = { weight: 0 };
+          groups[name].weight += d.weight;
+        });
+        Object.entries(groups).forEach(([name, data]) => {
+          const purchaseCat = purchaseBreakdown.find(p => p.itemName === name);
+          const liveWeight = purchaseCat ? purchaseCat.weight : 0;
+          let rend = 0;
+          if (liveWeight > 0) rend = (data.weight / liveWeight) * 100;
+          if (batch.isHookPurchase) rend = 100;
+
+          slaughterBreakdown.push({
+            itemName: name,
+            weight: data.weight,
+            rendimiento: rend
+          });
+        });
       }
 
       // 4. Ventas y Mermas desde Inventario
@@ -142,11 +196,13 @@ export default async function LotReportPage({ searchParams }: { searchParams: Pr
           quantity: purchaseQuantity,
           weight: purchaseWeight,
           totalCost: purchaseTotalCost,
-          avgCost: purchaseWeight > 0 ? purchaseTotalCost / purchaseWeight : 0
+          avgCost: purchaseWeight > 0 ? purchaseTotalCost / purchaseWeight : 0,
+          breakdown: purchaseBreakdown
         },
         slaughter: {
           weight: slaughterWeight,
-          performance: performance
+          performance: performance,
+          breakdown: slaughterBreakdown
         },
         inventory: {
           stockKg: totalStockKg,

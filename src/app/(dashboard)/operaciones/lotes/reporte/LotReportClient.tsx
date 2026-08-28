@@ -80,7 +80,7 @@ export function LotReportClient({ allBatches, reportData }: { allBatches: any[],
               <h3 className="text-zinc-400 print:text-gray-600 font-medium text-sm flex items-center gap-2 mb-4">
                 <Store className="w-4 h-4 text-emerald-500" /> Inversión (Compra)
               </h3>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-4 mb-4">
                 <div>
                   <p className="text-zinc-500 print:text-gray-500 text-xs uppercase">Animales</p>
                   <p className="text-xl font-bold">{reportData.purchase.quantity} cabezas</p>
@@ -98,13 +98,30 @@ export function LotReportClient({ allBatches, reportData }: { allBatches: any[],
                   <p className="text-xl font-bold text-emerald-400 print:text-black">{formatCurrency(reportData.purchase.totalCost)}</p>
                 </div>
               </div>
+
+              {reportData.purchase.breakdown?.length > 0 && (
+                <div className="mt-4 pt-4 border-t border-zinc-800/50">
+                  <p className="text-zinc-500 print:text-gray-500 text-xs uppercase mb-2">Desglose por Categoría</p>
+                  <div className="space-y-2">
+                    {reportData.purchase.breakdown.map((cat: any, i: number) => (
+                      <div key={i} className="flex justify-between items-center text-sm">
+                        <span className="text-zinc-300 font-medium">{cat.itemName}</span>
+                        <div className="text-right">
+                          <span className="text-zinc-400 mr-3">{cat.weight.toLocaleString("es-PY")} kg ({formatCurrency(cat.avgCost)}/kg)</span>
+                          <span className="font-bold text-emerald-400/80">{formatCurrency(cat.totalCost)}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="bg-zinc-900/40 print:bg-gray-50 border border-zinc-800 print:border-gray-300 rounded-xl p-5">
               <h3 className="text-zinc-400 print:text-gray-600 font-medium text-sm flex items-center gap-2 mb-4">
                 <Beef className="w-4 h-4 text-emerald-500" /> Rendimiento de Faena
               </h3>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-4 mb-4">
                 <div>
                   <p className="text-zinc-500 print:text-gray-500 text-xs uppercase">Kilos Gancho Producidos</p>
                   <p className="text-xl font-bold">{reportData.slaughter.weight.toLocaleString("es-PY")} kg</p>
@@ -122,6 +139,23 @@ export function LotReportClient({ allBatches, reportData }: { allBatches: any[],
                   <p className="text-xl font-bold text-amber-400 print:text-black">{formatCurrency(reportData.inventory.stockValue)}</p>
                 </div>
               </div>
+
+              {reportData.slaughter.breakdown?.length > 0 && (
+                <div className="mt-4 pt-4 border-t border-zinc-800/50">
+                  <p className="text-zinc-500 print:text-gray-500 text-xs uppercase mb-2">Desglose por Categoría</p>
+                  <div className="space-y-2">
+                    {reportData.slaughter.breakdown.map((cat: any, i: number) => (
+                      <div key={i} className="flex justify-between items-center text-sm">
+                        <span className="text-zinc-300 font-medium">{cat.itemName}</span>
+                        <div className="text-right">
+                          <span className="font-bold text-zinc-200 mr-3">{cat.weight.toLocaleString("es-PY")} kg gancho</span>
+                          <span className="text-emerald-400/80 font-bold">{cat.rendimiento.toFixed(2)}% rend</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -156,9 +190,16 @@ export function LotReportClient({ allBatches, reportData }: { allBatches: any[],
               
               <div className="flex justify-between items-center pt-4">
                 <span className="text-xl font-black text-white print:text-black">RESULTADO NETO LÍQUIDO</span>
-                <span className={`text-3xl font-black ${reportData.results.netResult >= 0 ? "text-emerald-400" : "text-rose-500"} print:text-black`}>
-                  {formatCurrency(reportData.results.netResult)}
-                </span>
+                <div className="text-right">
+                  <div className={`text-3xl font-black ${reportData.results.netResult >= 0 ? "text-emerald-400" : "text-rose-500"} print:text-black`}>
+                    {formatCurrency(reportData.results.netResult)}
+                  </div>
+                  {reportData.purchase.totalCost > 0 && (
+                    <div className={`text-lg font-bold mt-1 ${reportData.results.netResult >= 0 ? "text-emerald-400/80" : "text-rose-500/80"}`}>
+                      % Utilidad sobre la compra: {((reportData.results.netResult / reportData.purchase.totalCost) * 100).toFixed(2)}%
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
             <p className="text-xs text-zinc-500 print:text-gray-500 mt-4 italic">
