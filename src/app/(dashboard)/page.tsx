@@ -31,58 +31,13 @@ export default async function DashboardPage() {
     return acc + (lot.currentStock * lot.unitCost);
   }, 0);
 
-  // 3. Ventas del Mes y Costo de Ventas (COGS)
-  const startOfMonth = new Date();
-  startOfMonth.setDate(1);
-  startOfMonth.setHours(0, 0, 0, 0);
-  const salesThisMonthRecords = await prisma.sale.findMany({
-    where: { 
-      date: { gte: startOfMonth }, 
-      status: 'CONFIRMED' 
-    },
-    include: { details: true }
+  // 3. Cheques en Cartera
+  const walletChecksRecords = await prisma.check.findMany({
+    where: { status: 'IN_PORTFOLIO' }
   });
-  
-  const salesThisMonth = salesThisMonthRecords.reduce((acc, sale) => acc + sale.totalValue, 0);
-  const costOfSalesThisMonth = salesThisMonthRecords.reduce((acc, sale) => {
-    const saleCost = sale.details.reduce((sum, d) => sum + (d.quantityKg * d.costAtSale), 0);
-    return acc + saleCost;
-  }, 0);
-  
-  const grossProfit = salesThisMonth - costOfSalesThisMonth;
+  const walletChecks = walletChecksRecords.reduce((acc, check) => acc + check.amount, 0);
 
-  // 4. Mermas de Cámara del Mes
-  const mermasThisMonthRecords = await prisma.inventoryMovement.findMany({
-    where: {
-      type: "OUT",
-      concept: { startsWith: "MERMA DE CAMARA" },
-      createdAt: { gte: startOfMonth }
-    },
-    include: { inventoryLot: true }
-  });
-  const mermasThisMonth = mermasThisMonthRecords.reduce((acc, mov) => {
-    return acc + (mov.quantity * mov.inventoryLot.unitCost);
-  }, 0);
-
-  // 5. Gastos Totales del Mes
-  const expensesThisMonthRecords = await prisma.expense.findMany({
-    where: { date: { gte: startOfMonth } }
-  });
-  const expensesThisMonth = expensesThisMonthRecords.reduce((acc, exp) => acc + exp.amount, 0);
-
-  // 5.1 Retenciones Sufridas del Mes
-  const retentionsThisMonthRecords = await prisma.payment.findMany({
-    where: { 
-      method: "RETENTION",
-      date: { gte: startOfMonth }
-    }
-  });
-  const retentionsThisMonth = retentionsThisMonthRecords.reduce((acc, p) => acc + p.amount, 0);
-
-  // 6. Rentabilidad Neta
-  const netProfit = grossProfit - expensesThisMonth - mermasThisMonth - retentionsThisMonth;
-
-  // 7. Cuentas por Cobrar y Pagar
+  // 4. Cuentas por Cobrar y Pagar
   const receivablesRecords = await prisma.accountReceivable.findMany({
     where: { status: { not: 'PAID' } }
   });
@@ -93,19 +48,24 @@ export default async function DashboardPage() {
   });
   const payables = payablesRecords.reduce((acc, pay) => acc + (pay.amount - pay.paidAmount), 0);
 
+  // 5. Capital Anterior (Último Cierre)
+  const lastClosure = await prisma.monthlyClosure.findFirst({
+    where: { status: 'CLOSED' },
+    orderBy: [
+      { year: 'desc' },
+      { month: 'desc' }
+    ]
+  });
+  const previousCapital = lastClosure ? lastClosure.totalCapital : 2717386896;
+
   return (
     <DashboardUI 
       bankBalance={bankBalance}
       inventoryValue={inventoryValue}
-      salesThisMonth={salesThisMonth}
-      costOfSalesThisMonth={costOfSalesThisMonth}
-      grossProfit={grossProfit}
-      mermasThisMonth={mermasThisMonth}
-      expensesThisMonth={expensesThisMonth}
-      retentionsThisMonth={retentionsThisMonth}
-      netProfit={netProfit}
+      walletChecks={walletChecks}
       receivables={receivables}
       payables={payables}
+      previousCapital={previousCapital}
     />
   );
 }

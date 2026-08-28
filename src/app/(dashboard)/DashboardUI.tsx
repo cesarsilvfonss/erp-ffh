@@ -7,27 +7,17 @@ import Link from "next/link";
 export function DashboardUI({ 
   bankBalance, 
   inventoryValue, 
-  salesThisMonth, 
-  costOfSalesThisMonth,
-  grossProfit,
-  mermasThisMonth,
-  expensesThisMonth,
-  retentionsThisMonth,
-  netProfit,
+  walletChecks,
   receivables,
-  payables
+  payables,
+  previousCapital
 }: {
   bankBalance: number;
   inventoryValue: number;
-  salesThisMonth: number;
-  costOfSalesThisMonth: number;
-  grossProfit: number;
-  mermasThisMonth: number;
-  expensesThisMonth: number;
-  retentionsThisMonth: number;
-  netProfit: number;
+  walletChecks: number;
   receivables: number;
   payables: number;
+  previousCapital: number;
 }) {
   const formatCurrency = (value: number) => {
     return value.toLocaleString("es-PY", { style: "currency", currency: "PYG", maximumFractionDigits: 0 });
@@ -36,10 +26,14 @@ export function DashboardUI({
   const metrics = [
     { label: "Saldo Bancario", value: formatCurrency(bankBalance), icon: CircleDollarSign, trend: "Actualizado", trendColor: "text-emerald-400", href: "/operaciones/finanzas/bancos" },
     { label: "Valor Inventario", value: formatCurrency(inventoryValue), icon: Beef, trend: "Costo total en stock", trendColor: "text-emerald-400", href: "/inventario" },
-    { label: "Ventas del Mes", value: formatCurrency(salesThisMonth), icon: TrendingUp, trend: "Ingreso Bruto", trendColor: "text-emerald-400", href: "/operaciones/ventas" },
+    { label: "Cheques en Cartera", value: formatCurrency(walletChecks), icon: CircleDollarSign, trend: "Por depositar", trendColor: "text-emerald-400", href: "/operaciones/finanzas/cheques" },
     { label: "Cuentas por Cobrar", value: formatCurrency(receivables), icon: Users, trend: "Saldo a favor", trendColor: "text-emerald-400", href: "/operaciones/finanzas/cuentas-cobrar" },
     { label: "Cuentas por Pagar", value: formatCurrency(payables), icon: Users, trend: "Deudas", trendColor: "text-amber-400", href: "/operaciones/finanzas/cuentas-pagar" },
   ];
+
+  const currentTotalCapital = bankBalance + walletChecks + receivables + inventoryValue - payables;
+  const capitalVariation = currentTotalCapital - previousCapital;
+  const growthPercentage = previousCapital > 0 ? (capitalVariation / previousCapital) * 100 : 0;
 
   return (
     <div className="space-y-6">
@@ -76,9 +70,9 @@ export function DashboardUI({
         ))}
       </div>
 
-      {/* RENTABILIDAD */}
+      {/* VARIACIÓN DEL CAPITAL */}
       <div className="mt-8">
-        <h2 className="text-lg font-bold text-zinc-100 mb-4">Rentabilidad del Mes Actual</h2>
+        <h2 className="text-lg font-bold text-zinc-100 mb-4">Variación del Capital</h2>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           
           <motion.div 
@@ -90,28 +84,32 @@ export function DashboardUI({
             <div className="flex flex-col md:flex-row justify-between gap-6">
               <div className="flex-1 space-y-4">
                 <div className="flex justify-between items-center border-b border-zinc-800 pb-3">
-                  <span className="text-zinc-400 font-medium">Ventas Brutas</span>
-                  <span className="text-emerald-400 font-bold">{formatCurrency(salesThisMonth)}</span>
+                  <span className="text-zinc-400 font-medium">Saldo Bancario</span>
+                  <span className="text-emerald-400 font-bold">{formatCurrency(bankBalance)}</span>
                 </div>
                 <div className="flex justify-between items-center border-b border-zinc-800 pb-3">
-                  <span className="text-zinc-400 font-medium flex items-center gap-2"><ArrowDownRight className="w-4 h-4 text-rose-500"/> Costo de Ventas (Carne)</span>
-                  <span className="text-rose-400 font-bold">-{formatCurrency(costOfSalesThisMonth)}</span>
+                  <span className="text-zinc-400 font-medium">Cheques en Cartera</span>
+                  <span className="text-emerald-400 font-bold">{formatCurrency(walletChecks)}</span>
+                </div>
+                <div className="flex justify-between items-center border-b border-zinc-800 pb-3">
+                  <span className="text-zinc-400 font-medium">Saldo de Clientes</span>
+                  <span className="text-emerald-400 font-bold">{formatCurrency(receivables)}</span>
+                </div>
+                <div className="flex justify-between items-center border-b border-zinc-800 pb-3">
+                  <span className="text-zinc-400 font-medium">Stock (Inventario)</span>
+                  <span className="text-emerald-400 font-bold">{formatCurrency(inventoryValue)}</span>
+                </div>
+                <div className="flex justify-between items-center border-b border-zinc-800 pb-3">
+                  <span className="text-zinc-400 font-medium">Saldo de Proveedores</span>
+                  <span className="text-rose-400 font-bold">-{formatCurrency(payables)}</span>
                 </div>
                 <div className="flex justify-between items-center border-b border-zinc-800 pb-3 bg-zinc-900/50 p-2 rounded-lg">
-                  <span className="text-zinc-200 font-bold">Rentabilidad Bruta</span>
-                  <span className="text-cyan-400 font-bold text-lg">{formatCurrency(grossProfit)}</span>
+                  <span className="text-zinc-200 font-bold">Total del Capital Actual</span>
+                  <span className="text-cyan-400 font-bold text-lg">{formatCurrency(currentTotalCapital)}</span>
                 </div>
-                <div className="flex justify-between items-center border-b border-zinc-800 pb-3">
-                  <span className="text-zinc-400 font-medium flex items-center gap-2"><Receipt className="w-4 h-4 text-rose-500"/> Gastos Operativos</span>
-                  <span className="text-rose-400 font-bold">-{formatCurrency(expensesThisMonth)}</span>
-                </div>
-                <div className="flex justify-between items-center border-b border-zinc-800 pb-3">
-                  <span className="text-zinc-400 font-medium flex items-center gap-2"><AlertTriangle className="w-4 h-4 text-amber-500"/> Pérdida por Mermas</span>
-                  <span className="text-amber-400 font-bold">-{formatCurrency(mermasThisMonth)}</span>
-                </div>
-                <div className="flex justify-between items-center border-b border-zinc-800 pb-3">
-                  <span className="text-zinc-400 font-medium flex items-center gap-2"><AlertTriangle className="w-4 h-4 text-amber-500"/> Retenciones Sufridas</span>
-                  <span className="text-amber-400 font-bold">-{formatCurrency(retentionsThisMonth)}</span>
+                <div className="flex justify-between items-center pb-1 p-2">
+                  <span className="text-zinc-400 font-medium">Capital del período anterior</span>
+                  <span className="text-zinc-300 font-bold">{formatCurrency(previousCapital)}</span>
                 </div>
               </div>
             </div>
@@ -122,20 +120,23 @@ export function DashboardUI({
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.4, delay: 0.2 }}
             className={`rounded-xl p-6 flex flex-col justify-center items-center text-center border relative overflow-hidden ${
-              netProfit >= 0 
+              capitalVariation >= 0 
                 ? "bg-emerald-950/20 border-emerald-900/50" 
                 : "bg-rose-950/20 border-rose-900/50"
             }`}
           >
             <div className="absolute top-0 right-0 p-4 opacity-10">
-              {netProfit >= 0 ? <ArrowUpRight className="w-24 h-24 text-emerald-500" /> : <ArrowDownRight className="w-24 h-24 text-rose-500" />}
+              {capitalVariation >= 0 ? <TrendingUp className="w-24 h-24 text-emerald-500" /> : <ArrowDownRight className="w-24 h-24 text-rose-500" />}
             </div>
-            <p className="text-zinc-400 font-medium mb-2 relative z-10">Rentabilidad Neta (Mes)</p>
-            <h2 className={`text-4xl font-bold relative z-10 ${netProfit >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
-              {formatCurrency(netProfit)}
+            <p className="text-zinc-400 font-medium mb-2 relative z-10">Variación del Capital</p>
+            <h2 className={`text-4xl font-bold relative z-10 ${capitalVariation >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
+              {formatCurrency(capitalVariation)}
             </h2>
+            <div className={`mt-4 px-4 py-2 rounded-full font-bold relative z-10 ${capitalVariation >= 0 ? "bg-emerald-500/10 text-emerald-400" : "bg-rose-500/10 text-rose-400"}`}>
+              {capitalVariation >= 0 ? "+" : ""}{growthPercentage.toFixed(2)}% Crecimiento
+            </div>
             <p className="text-sm text-zinc-500 mt-4 max-w-[80%] relative z-10">
-              Margen de ganancia exacto tras deducir costo de carne, gastos operativos y mermas de cámara.
+              Crecimiento de la empresa comparado con el capital del último cierre mensual.
             </p>
           </motion.div>
 
