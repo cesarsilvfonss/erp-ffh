@@ -7,20 +7,21 @@ import { getLiveCapital } from "@/actions/closure";
 
 export const dynamic = "force-dynamic";
 
-export default async function MonthlyClosurePage({
-  searchParams
-}: {
-  searchParams: { month?: string, year?: string }
+export default async function MonthlyClosurePage({ 
+  searchParams 
+}: { 
+  searchParams: Promise<{ month?: string, year?: string }> 
 }) {
   const session = await getServerSession(authOptions);
   
-  if (!session || session.user.role === "WEIGHER") {
+  if (!session || (session.user.role !== "ADMIN" && session.user.role !== "ADMINISTRATION")) {
     redirect("/");
   }
 
+  const resolvedSearchParams = await searchParams;
   const now = new Date();
-  const month = searchParams.month ? parseInt(searchParams.month) : now.getMonth();
-  const year = searchParams.year ? parseInt(searchParams.year) : now.getFullYear();
+  const month = resolvedSearchParams.month ? parseInt(resolvedSearchParams.month) : now.getMonth();
+  const year = resolvedSearchParams.year ? parseInt(resolvedSearchParams.year) : now.getFullYear();
 
   // Buscar si existe un cierre (DRAFT o CLOSED)
   const closure = await prisma.monthlyClosure.findUnique({

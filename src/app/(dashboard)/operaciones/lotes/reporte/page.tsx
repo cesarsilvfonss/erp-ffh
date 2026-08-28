@@ -6,7 +6,7 @@ import { LotReportClient } from "./LotReportClient";
 
 export const dynamic = "force-dynamic";
 
-export default async function LotReportPage({ searchParams }: { searchParams: { batchId?: string } }) {
+export default async function LotReportPage({ searchParams }: { searchParams: Promise<{ batchId?: string }> }) {
   const session = await getServerSession(authOptions);
   
   if (!session) {
@@ -17,7 +17,7 @@ export default async function LotReportPage({ searchParams }: { searchParams: { 
     redirect("/");
   }
 
-  const { batchId } = searchParams;
+  const { batchId } = await searchParams;
 
   // Obtener todos los lotes para el selector
   const allBatches = await prisma.batch.findMany({

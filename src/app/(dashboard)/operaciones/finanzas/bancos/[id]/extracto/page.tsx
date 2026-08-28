@@ -7,19 +7,21 @@ import { ExtractoClient } from "./ExtractoClient";
 
 export const dynamic = "force-dynamic";
 
-export default async function ExtractoBancarioPage({ 
-  params, 
+export default async function BankExtractPage({ 
+  params,
   searchParams 
 }: { 
   params: Promise<{ id: string }>,
-  searchParams: { month?: string, year?: string } 
+  searchParams: Promise<{ month?: string, year?: string }> 
 }) {
-  const { id } = await params;
   const session = await getServerSession(authOptions);
   
-  if (!session || session.user.role === "WEIGHER") {
+  if (!session || (session.user.role !== "ADMIN" && session.user.role !== "ADMINISTRATION")) {
     redirect("/");
   }
+
+  const { id } = await params;
+  const resolvedSearchParams = await searchParams;
 
   const bank = await prisma.bankAccount.findUnique({
     where: { id },
@@ -29,8 +31,8 @@ export default async function ExtractoBancarioPage({
   if (!bank) return notFound();
 
   const now = new Date();
-  const month = searchParams.month ? parseInt(searchParams.month) : now.getMonth();
-  const year = searchParams.year ? parseInt(searchParams.year) : now.getFullYear();
+  const month = resolvedSearchParams.month ? parseInt(resolvedSearchParams.month) : now.getMonth();
+  const year = resolvedSearchParams.year ? parseInt(resolvedSearchParams.year) : now.getFullYear();
 
   // Fecha inicio y fin del mes seleccionado
   const startDate = new Date(year, month, 1);
