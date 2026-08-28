@@ -421,3 +421,64 @@ export async function processBulkPayablePayment(data: {
     return { success: false, error: error.message };
   }
 }
+
+export async function processInternalTransfer(data: {
+  fromBankId: string;
+  toBankId: string;
+  amountFrom: number;
+  amountTo: number;
+  date: string;
+  concept: string;
+  reference?: string;
+}) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return { success: false, error: "No autenticado" };
+    }
+
+    await checkPeriodClosure(new Date(data.date));
+
+    if (data.fromBankId === data.toBankId) {
+      throw new Error("La cuenta de origen y destino no pueden ser la misma");
+    }
+
+    if (data.amountFrom <= 0 || data.amountTo <= 0) {
+      throw new Error("Los montos deben ser mayores a 0");
+    }
+
+    return await prisma.$transaction(async (tx) => {
+      // 1. Transaction OUT (Expense) on Source Bank
+      await tx.transaction.create({
+        data: {
+          bankAccountId: data.fromBankId,
+          date: new Date(data.date + "T12:00:00Z"),
+          type: "EXPENSE",
+          amount: data.amountFrom,
+          reference: data.reference,
+          concept: `Transferencia a cuenta externa: ${data.concept}`,
+          userId: session.user.id
+        }
+      });
+
+      // 2. Transaction IN (Income) on Destination Bank
+      await tx.transaction.create({
+        data: {
+          bankAccountId: data.toBankId,
+          date: new Date(data.date + "T12:00:00Z"),
+          type: "INCOME",
+          amount: data.amountTo,
+          reference: data.reference,
+          concept: `Transferencia recibida: ${data.concept}`,
+          userId: session.user.id
+        }
+      });
+
+      revalidatePath("/operaciones/finanzas/bancos");
+      return { success: true };
+    });
+  } catch (error: any) {
+    console.error("Error processing internal transfer:", error);
+    return { success: false, error: error.message };
+  }
+}

@@ -6,6 +6,8 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
 
+import { TransferModal } from "./TransferModal";
+
 export const dynamic = "force-dynamic";
 
 export default async function BancosPage() {
@@ -53,7 +55,10 @@ export default async function BancosPage() {
           <p className="text-zinc-400 text-sm mt-1">Gestión de bancos y movimientos.</p>
         </div>
         
-        <BankForm currencies={currencies} />
+        <div className="flex items-center gap-3">
+          <TransferModal banks={banksWithBalance} />
+          <BankForm currencies={currencies} />
+        </div>
       </div>
 
       <BankList initialBanks={banksWithBalance} userRole={session.user.role} />
