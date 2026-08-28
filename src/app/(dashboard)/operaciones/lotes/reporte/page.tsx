@@ -33,6 +33,7 @@ export default async function LotReportPage({ searchParams }: { searchParams: { 
       where: { id: batchId },
       include: {
         provider: true,
+        closure: true,
         details: { include: { item: true } },
         expenses: { include: { category: true } },
         slaughter: { include: { details: { include: { item: true } } } },
@@ -50,9 +51,18 @@ export default async function LotReportPage({ searchParams }: { searchParams: { 
 
     if (batch) {
       // 2. Calcular Inversión Inicial (Compra)
-      const purchaseQuantity = batch.details.reduce((acc: number, d: any) => acc + d.quantity, 0);
-      const purchaseWeight = batch.details.reduce((acc: number, d: any) => acc + d.weight, 0);
-      const purchaseTotalCost = batch.details.reduce((acc: number, d: any) => acc + (d.weight * d.unitCost), 0);
+      let purchaseQuantity = 0;
+      let purchaseWeight = 0;
+      let purchaseTotalCost = 0;
+
+      if (batch.closure) {
+        purchaseQuantity = batch.closure.totalHeads;
+        purchaseWeight = batch.closure.totalGrossWeight;
+        purchaseTotalCost = batch.closure.totalValue;
+      } else {
+        purchaseQuantity = batch.details.reduce((acc: number, d: any) => acc + d.quantity, 0);
+        purchaseWeight = batch.details.reduce((acc: number, d: any) => acc + d.netWeight, 0);
+      }
       
       // 3. Faena y Rendimiento
       let slaughterWeight = 0;
