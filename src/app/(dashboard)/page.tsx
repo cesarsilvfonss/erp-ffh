@@ -3,6 +3,7 @@ import { DashboardUI } from "./DashboardUI";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
+import { startOfMonth, endOfMonth } from "date-fns";
 
 export const dynamic = "force-dynamic";
 
@@ -12,6 +13,36 @@ export default async function DashboardPage() {
   if (session?.user?.role === "WEIGHER") {
     redirect("/operaciones/faena");
   }
+
+  const now = new Date();
+  const start = startOfMonth(now);
+  const end = endOfMonth(now);
+
+  const [
+    salesResult,
+    expensesResult,
+    purchasesResult
+  ] = await Promise.all([
+    prisma.sale.aggregate({
+      where: { date: { gte: start, lte: end }, status: { not: "CANCELLED" } },
+      _sum: { totalValue: true }
+    }),
+    prisma.expense.aggregate({
+      where: { date: { gte: start, lte: end } },
+      _sum: { amount: true }
+    }),
+    prisma.batchClosure.aggregate({
+      where: { 
+        batch: { date: { gte: start, lte: end } }
+      },
+      _sum: { totalValue: true }
+    })
+  ]);
+
+  const monthlySales = salesResult._sum?.totalValue || 0;
+  const monthlyExpenses = expensesResult._sum?.amount || 0;
+  const monthlyPurchases = purchasesResult._sum?.totalValue || 0;
+
   // 1. Saldo Bancario
   const bankAccounts = await prisma.bankAccount.findMany({
     include: { transactions: true }
@@ -193,6 +224,9 @@ export default async function DashboardPage() {
       previousCapital={previousCapital}
       rankingEvents={rawEvents}
       profitEvents={profitEvents}
+      monthlySales={monthlySales}
+      monthlyPurchases={monthlyPurchases}
+      monthlyExpenses={monthlyExpenses}
     />
   );
 }

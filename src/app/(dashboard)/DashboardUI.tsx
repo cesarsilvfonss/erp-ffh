@@ -15,7 +15,10 @@ export function DashboardUI({
   payables,
   previousCapital,
   rankingEvents = [],
-  profitEvents = []
+  profitEvents = [],
+  monthlySales = 0,
+  monthlyPurchases = 0,
+  monthlyExpenses = 0
 }: {
   bankBalance: number;
   inventoryValue: number;
@@ -26,6 +29,9 @@ export function DashboardUI({
   previousCapital: number;
   rankingEvents?: any[];
   profitEvents?: any[];
+  monthlySales?: number;
+  monthlyPurchases?: number;
+  monthlyExpenses?: number;
 }) {
   const formatCurrency = (value: number) => {
     return value.toLocaleString("es-PY", { style: "currency", currency: "PYG", maximumFractionDigits: 0 });
@@ -51,6 +57,59 @@ export function DashboardUI({
           <h1 className="text-2xl font-bold text-zinc-100">Dashboard Gerencial</h1>
           <p className="text-zinc-400 text-sm mt-1">Resumen en tiempo real de operaciones y finanzas.</p>
         </div>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+          className="bg-zinc-900/50 border border-zinc-800 p-6 rounded-xl hover:bg-zinc-800 transition-colors"
+        >
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="text-zinc-400 text-sm font-medium">Ventas del Mes</p>
+              <h3 className="text-2xl font-bold text-emerald-400 mt-2">{formatCurrency(monthlySales)}</h3>
+            </div>
+            <div className="p-2 bg-emerald-500/10 rounded-xl">
+              <TrendingUp className="w-5 h-5 text-emerald-400" />
+            </div>
+          </div>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.1 }}
+          className="bg-zinc-900/50 border border-zinc-800 p-6 rounded-xl hover:bg-zinc-800 transition-colors"
+        >
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="text-zinc-400 text-sm font-medium">Compras del Mes</p>
+              <h3 className="text-2xl font-bold text-sky-400 mt-2">{formatCurrency(monthlyPurchases)}</h3>
+            </div>
+            <div className="p-2 bg-sky-500/10 rounded-xl">
+              <Beef className="w-5 h-5 text-sky-400" />
+            </div>
+          </div>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.2 }}
+          className="bg-zinc-900/50 border border-zinc-800 p-6 rounded-xl hover:bg-zinc-800 transition-colors"
+        >
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="text-zinc-400 text-sm font-medium">Gastos del Mes</p>
+              <h3 className="text-2xl font-bold text-rose-400 mt-2">{formatCurrency(monthlyExpenses)}</h3>
+            </div>
+            <div className="p-2 bg-rose-500/10 rounded-xl">
+              <Receipt className="w-5 h-5 text-rose-400" />
+            </div>
+          </div>
+        </motion.div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
