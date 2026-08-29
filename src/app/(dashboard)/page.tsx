@@ -90,12 +90,21 @@ export default async function DashboardPage() {
     }
   });
 
-  const rawEvents: any[] = [];
+  const providerStats: Record<string, {
+    name: string,
+    globalLive: number,
+    globalCarcass: number,
+    categories: Record<string, { live: number, carcass: number }>
+  }> = {};
+
+  const allCategories = new Set<string>();
 
   rankingSlaughters.forEach(s => {
     const pName = s.batch.provider?.legalName || "Desconocido";
-    const date = s.batch.date;
-    const batchNumber = s.batch.batchNumber;
+    if (!providerStats[pName]) {
+      providerStats[pName] = { name: pName, globalLive: 0, globalCarcass: 0, categories: {} };
+    }
+    const pStats = providerStats[pName];
 
     const liveWeightByCat: Record<string, number> = {};
     if (s.batch.closure) {
@@ -110,18 +119,96 @@ export default async function DashboardPage() {
 
     s.details.forEach((d: any) => {
       const catName = d.item.name;
-      const liveWt = liveWeightByCat[catName] || 0;
-      if (liveWt > 0) {
-        const rend = (d.weight / liveWt) * 100;
-        rawEvents.push({
-          providerName: pName,
-          category: catName,
-          batchNumber,
-          date,
-          rendimiento: rend
-        });
+      allCategories.add(catName);
+
+      if (!pStats.categories[catName]) {
+        pStats.categories[catName] = { live: 0, carcass: 0 };
       }
+      pStats.categories[catName].carcass += d.weight;
+      pStats.globalCarcass += d.weight;
     });
+
+    Object.entries(liveWeightByCat).forEach(([catName, liveWt]) => {
+      allCategories.add(catName);
+      if (!pStats.categories[catName]) {
+        pStats.categories[catName] = { live: 0, carcass: 0 };
+      }
+      pStats.categories[catName].live += liveWt;
+      pStats.globalLive += liveWt;
+    });
+  });
+
+  const categoryHeaders = Array.from(allCategories).sort();
+
+  const providerRanking = Object.values(providerStats).map(p => {
+    const globalRend = p.globalLive > 0 ? (p.globalCarcass / p.globalLive) * 100 : 0;
+    const catRend: Record<string, number> = {};
+    categoryHeaders.forEach(c => {
+      const stats = p.categories[c];
+      catRend[c] = (stats && stats.live > 0) ? (stats.carcass / stats.live) * 100 : 0;
+    });
+    return {
+      name: p.name,
+      globalRendimiento: globalRend,
+      categoryRendimientos: catRend
+    };
+  }).filter(p => p.globalRendimiento > 0).sort((a, b) => b.globalRendimiento - a.globalRendimiento);
+
+  const profitabilityBatches = await prisma.batch.findMany({
+    where: {
+      status: "CLOSED",
+      closure: { isNot: null }
+    },
+    include: {
+      provider: true,
+      closure: true,
+      expenses: true,
+      inventoryLots: {
+        include: {
+          saleDetails: {
+            where: { sale: { status: { not: "CANCELLED" } } },
+            include: { sale: true }
+          },
+          movements: {
+            where: { type: "OUT", concept: { contains: "MERMA" } }
+          }
+        }
+      }
+    }
+  });
+
+  const profitEvents = profitabilityBatches.map((b: any) => {
+    const purchaseCost = b.closure.totalValue;
+    
+    let totalSalesRevenue = 0;
+    let costOfSoldGoods = 0;
+    let totalMermasCost = 0;
+
+    b.inventoryLots.forEach((lot: any) => {
+      lot.saleDetails.forEach((sd: any) => {
+        totalSalesRevenue += (sd.quantityKg * sd.salePrice);
+        costOfSoldGoods += (sd.quantityKg * lot.unitCost);
+      });
+      lot.movements.forEach((m: any) => {
+        totalMermasCost += (m.quantity * lot.unitCost);
+      });
+    });
+
+    const totalExpenses = b.expenses.reduce((acc: number, e: any) => acc + e.amount, 0);
+
+    const grossResult = totalSalesRevenue - costOfSoldGoods;
+    const netResult = grossResult - totalExpenses - totalMermasCost;
+    const utilidadPorcentaje = purchaseCost > 0 ? (netResult / purchaseCost) * 100 : 0;
+
+    return {
+      batchId: b.id,
+      batchNumber: b.batchNumber,
+      date: b.date.toISOString(),
+      providerName: b.provider?.legalName || "Desconocido",
+      purchaseTotal: purchaseCost,
+      netResult,
+      utilidadPorcentaje
+    };
   });
 
   return (
@@ -133,7 +220,9 @@ export default async function DashboardPage() {
       receivables={receivables}
       payables={payables}
       previousCapital={previousCapital}
-      rankingEvents={rawEvents}
+      providerRanking={providerRanking}
+      categoryHeaders={categoryHeaders}
+      profitEvents={profitEvents}
     />
   );
 }
