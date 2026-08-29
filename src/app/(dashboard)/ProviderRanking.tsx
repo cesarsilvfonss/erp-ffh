@@ -6,36 +6,68 @@ import { TrendingUp, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 export function ProviderRanking({ events }: { events: any[] }) {
-  const [selectedCategory, setSelectedCategory] = useState<string>("Todos");
-  const [selectedProvider, setSelectedProvider] = useState<string | null>(null);
-
   const categories = useMemo(() => {
     const cats = new Set<string>();
     events.forEach(e => cats.add(e.category));
     return Array.from(cats).sort();
   }, [events]);
 
-  const ranking = useMemo(() => {
-    const filtered = selectedCategory === "Todos" 
-      ? events 
-      : events.filter(e => e.category === selectedCategory);
+  const [selectedCategory, setSelectedCategory] = useState<string>(() => {
+    const vacaCat = events.find(e => e.category.toUpperCase() === "VACA");
+    return vacaCat ? vacaCat.category : "Todos";
+  });
+  const [selectedProvider, setSelectedProvider] = useState<string | null>(null);
 
-    const providerStats: Record<string, { sum: number, count: number }> = {};
-    
-    filtered.forEach(e => {
-      if (!providerStats[e.providerName]) providerStats[e.providerName] = { sum: 0, count: 0 };
-      providerStats[e.providerName].sum += e.rendimiento;
-      providerStats[e.providerName].count += 1;
+  const ranking = useMemo(() => {
+    const providerStats: Record<string, { 
+      globalSum: number, 
+      globalCount: number, 
+      cats: Record<string, { sum: number, count: number }> 
+    }> = {};
+
+    events.forEach(e => {
+      if (!providerStats[e.providerName]) {
+        providerStats[e.providerName] = { globalSum: 0, globalCount: 0, cats: {} };
+      }
+      const p = providerStats[e.providerName];
+      p.globalSum += e.rendimiento;
+      p.globalCount += 1;
+
+      if (!p.cats[e.category]) p.cats[e.category] = { sum: 0, count: 0 };
+      p.cats[e.category].sum += e.rendimiento;
+      p.cats[e.category].count += 1;
     });
 
     return Object.entries(providerStats)
-      .map(([name, stats]) => ({
-        name,
-        avgRendimiento: stats.sum / stats.count,
-        count: stats.count
-      }))
-      .sort((a, b) => b.avgRendimiento - a.avgRendimiento);
-  }, [events, selectedCategory]);
+      .map(([name, stats]) => {
+        const catAverages: Record<string, number> = {};
+        categories.forEach(c => {
+          if (stats.cats[c] && stats.cats[c].count > 0) {
+            catAverages[c] = stats.cats[c].sum / stats.cats[c].count;
+          } else {
+            catAverages[c] = 0;
+          }
+        });
+
+        return {
+          name,
+          globalAvg: stats.globalCount > 0 ? stats.globalSum / stats.globalCount : 0,
+          catAverages,
+          globalCount: stats.globalCount
+        };
+      })
+      .filter(p => {
+        if (selectedCategory === "Todos") return p.globalAvg > 0;
+        return p.catAverages[selectedCategory] > 0;
+      })
+      .sort((a, b) => {
+        if (selectedCategory === "Todos") {
+          return b.globalAvg - a.globalAvg;
+        } else {
+          return b.catAverages[selectedCategory] - a.catAverages[selectedCategory];
+        }
+      });
+  }, [events, selectedCategory, categories]);
 
   const providerHistory = useMemo(() => {
     if (!selectedProvider) return [];
@@ -52,13 +84,13 @@ export function ProviderRanking({ events }: { events: any[] }) {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
         <h2 className="text-lg font-bold text-zinc-100">Ranking de Rendimiento por Proveedor</h2>
         <div className="flex items-center gap-2">
-          <span className="text-sm text-zinc-400">Filtrar Categoría:</span>
+          <span className="text-sm text-zinc-400">Categoría Principal:</span>
           <select 
             value={selectedCategory} 
             onChange={(e) => setSelectedCategory(e.target.value)}
             className="bg-zinc-900 border border-zinc-700 text-zinc-200 text-sm rounded-lg px-3 py-1.5 focus:outline-none focus:border-emerald-500"
           >
-            <option value="Todos">Todas las Categorías</option>
+            <option value="Todos">Global (Todas)</option>
             {categories.map(c => (
               <option key={c} value={c}>{c}</option>
             ))}
@@ -72,8 +104,10 @@ export function ProviderRanking({ events }: { events: any[] }) {
             <tr>
               <th className="px-6 py-4 font-semibold text-zinc-300">#</th>
               <th className="px-6 py-4 font-semibold text-zinc-300">Proveedor</th>
-              <th className="px-6 py-4 font-semibold text-zinc-300 text-center">Lotes Evaluados</th>
-              <th className="px-6 py-4 font-bold text-emerald-400 text-right">Rendimiento Promedio</th>
+              <th className={`px-6 py-4 text-center ${selectedCategory === "Todos" ? "font-bold text-emerald-400" : "font-semibold text-zinc-300"}`}>Global</th>
+              {categories.map(c => (
+                <th key={c} className={`px-6 py-4 text-center ${selectedCategory === c ? "font-bold text-emerald-400" : "font-semibold text-zinc-400"}`}>{c}</th>
+              ))}
             </tr>
           </thead>
           <tbody className="divide-y divide-zinc-800/50">
@@ -87,20 +121,32 @@ export function ProviderRanking({ events }: { events: any[] }) {
                 <td className="px-6 py-4 font-medium text-zinc-100 group-hover:text-emerald-400 transition-colors">
                   {prov.name}
                 </td>
-                <td className="px-6 py-4 text-center text-zinc-400">
-                  {prov.count}
-                </td>
-                <td className="px-6 py-4 text-right">
-                  <span className="inline-flex px-2 py-1 rounded bg-emerald-500/10 text-emerald-400 font-bold text-base">
-                    {prov.avgRendimiento.toFixed(2)}%
+                <td className="px-6 py-4 text-center">
+                  <span className={`inline-flex px-2 py-1 rounded font-bold text-base ${selectedCategory === "Todos" ? "bg-emerald-500/10 text-emerald-400" : "text-zinc-300"}`}>
+                    {prov.globalAvg.toFixed(2)}%
                   </span>
                 </td>
+                {categories.map(c => {
+                  const rend = prov.catAverages[c];
+                  const isSelected = selectedCategory === c;
+                  return (
+                    <td key={c} className="px-6 py-4 text-center font-medium">
+                      {rend > 0 ? (
+                        <span className={`inline-flex px-2 py-1 rounded ${isSelected ? "bg-emerald-500/10 text-emerald-400 font-bold" : "text-zinc-400"}`}>
+                          {rend.toFixed(2)}%
+                        </span>
+                      ) : (
+                        <span className="text-zinc-600">-</span>
+                      )}
+                    </td>
+                  );
+                })}
               </tr>
             ))}
             {ranking.length === 0 && (
               <tr>
-                <td colSpan={4} className="px-6 py-8 text-center text-zinc-500">
-                  No hay datos de rendimiento para esta categoría.
+                <td colSpan={categories.length + 3} className="px-6 py-8 text-center text-zinc-500">
+                  No hay proveedores con rendimiento en esta categoría.
                 </td>
               </tr>
             )}
