@@ -66,12 +66,12 @@ export function DashboardUI({
           transition={{ duration: 0.4 }}
           className="bg-zinc-900/50 border border-zinc-800 p-6 rounded-xl hover:bg-zinc-800 transition-colors"
         >
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-zinc-400 text-sm font-medium">Ventas del Mes</p>
-              <h3 className="text-2xl font-bold text-emerald-400 mt-2">{formatCurrency(monthlySales)}</h3>
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-zinc-400 text-sm font-medium truncate">Ventas del Mes</p>
+              <h3 className="text-[17px] xl:text-2xl font-bold text-emerald-400 mt-2 tracking-tight break-words">{formatCurrency(monthlySales)}</h3>
             </div>
-            <div className="p-2 bg-emerald-500/10 rounded-xl">
+            <div className="p-2 bg-emerald-500/10 rounded-xl shrink-0">
               <TrendingUp className="w-5 h-5 text-emerald-400" />
             </div>
           </div>
@@ -83,12 +83,12 @@ export function DashboardUI({
           transition={{ duration: 0.4, delay: 0.1 }}
           className="bg-zinc-900/50 border border-zinc-800 p-6 rounded-xl hover:bg-zinc-800 transition-colors"
         >
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-zinc-400 text-sm font-medium">Compras del Mes</p>
-              <h3 className="text-2xl font-bold text-sky-400 mt-2">{formatCurrency(monthlyPurchases)}</h3>
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-zinc-400 text-sm font-medium truncate">Compras del Mes</p>
+              <h3 className="text-[17px] xl:text-2xl font-bold text-sky-400 mt-2 tracking-tight break-words">{formatCurrency(monthlyPurchases)}</h3>
             </div>
-            <div className="p-2 bg-sky-500/10 rounded-xl">
+            <div className="p-2 bg-sky-500/10 rounded-xl shrink-0">
               <Beef className="w-5 h-5 text-sky-400" />
             </div>
           </div>
@@ -100,19 +100,19 @@ export function DashboardUI({
           transition={{ duration: 0.4, delay: 0.2 }}
           className="bg-zinc-900/50 border border-zinc-800 p-6 rounded-xl hover:bg-zinc-800 transition-colors"
         >
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-zinc-400 text-sm font-medium">Gastos del Mes</p>
-              <h3 className="text-2xl font-bold text-rose-400 mt-2">{formatCurrency(monthlyExpenses)}</h3>
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-zinc-400 text-sm font-medium truncate">Gastos del Mes</p>
+              <h3 className="text-[17px] xl:text-2xl font-bold text-rose-400 mt-2 tracking-tight break-words">{formatCurrency(monthlyExpenses)}</h3>
             </div>
-            <div className="p-2 bg-rose-500/10 rounded-xl">
+            <div className="p-2 bg-rose-500/10 rounded-xl shrink-0">
               <Receipt className="w-5 h-5 text-rose-400" />
             </div>
           </div>
         </motion.div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6 gap-4">
         {metrics.map((metric, index) => (
           <Link key={metric.label} href={metric.href} className="block">
             <motion.div
@@ -121,12 +121,14 @@ export function DashboardUI({
               transition={{ duration: 0.4, delay: index * 0.1 }}
               className="bg-zinc-900/50 border border-zinc-800 p-4 rounded-xl hover:bg-zinc-800 transition-colors group cursor-pointer h-full"
             >
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-zinc-400 text-xs font-medium">{metric.label}</p>
-                  <h3 className="text-lg font-bold text-zinc-100 mt-1">{metric.value}</h3>
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="text-zinc-400 text-xs font-medium truncate">{metric.label}</p>
+                  <h3 className="text-[15px] xl:text-base font-bold text-zinc-100 mt-1 tracking-tight break-words">
+                    {metric.value}
+                  </h3>
                 </div>
-                <div className="p-1.5 bg-zinc-800 rounded-lg group-hover:bg-zinc-700 transition-colors">
+                <div className="p-1.5 bg-zinc-800 rounded-lg group-hover:bg-zinc-700 transition-colors shrink-0">
                   <metric.icon className="w-4 h-4 text-emerald-400" />
                 </div>
               </div>
