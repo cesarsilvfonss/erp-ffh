@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import { Beef, CircleDollarSign, TrendingUp, Users, AlertTriangle, Receipt, ArrowDownRight, ArrowUpRight } from "lucide-react";
+import { ProviderRanking } from "./ProviderRanking";
 import Link from "next/link";
 
 export function DashboardUI({ 
@@ -12,8 +13,7 @@ export function DashboardUI({
   receivables,
   payables,
   previousCapital,
-  providerRanking,
-  categoryHeaders
+  rankingEvents = []
 }: {
   bankBalance: number;
   inventoryValue: number;
@@ -22,8 +22,7 @@ export function DashboardUI({
   receivables: number;
   payables: number;
   previousCapital: number;
-  providerRanking?: any[];
-  categoryHeaders?: string[];
+  rankingEvents?: any[];
 }) {
   const formatCurrency = (value: number) => {
     return value.toLocaleString("es-PY", { style: "currency", currency: "PYG", maximumFractionDigits: 0 });
@@ -154,47 +153,7 @@ export function DashboardUI({
         </div>
       </div>
 
-      {/* RANKING DE PROVEEDORES */}
-      {providerRanking && providerRanking.length > 0 && (
-        <div className="mt-8">
-          <h2 className="text-lg font-bold text-zinc-100 mb-4">Ranking de Rendimiento por Proveedor</h2>
-          <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl overflow-hidden overflow-x-auto">
-            <table className="w-full text-left text-sm whitespace-nowrap">
-              <thead className="bg-zinc-950/50 border-b border-zinc-800">
-                <tr>
-                  <th className="px-6 py-4 font-semibold text-zinc-300">Proveedor</th>
-                  <th className="px-6 py-4 font-bold text-emerald-400 text-center">Rendimiento Global</th>
-                  {categoryHeaders?.map(cat => (
-                    <th key={cat} className="px-6 py-4 font-semibold text-zinc-400 text-center">{cat}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-zinc-800/50">
-                {providerRanking.map((prov, idx) => (
-                  <tr key={prov.name} className="hover:bg-zinc-800/20 transition-colors">
-                    <td className="px-6 py-4 font-medium text-zinc-100 flex items-center gap-3">
-                      <span className="text-zinc-500 font-mono w-4">{idx + 1}.</span> {prov.name}
-                    </td>
-                    <td className="px-6 py-4 text-center">
-                      <span className="inline-flex px-2 py-1 rounded bg-emerald-500/10 text-emerald-400 font-bold text-base">
-                        {prov.globalRendimiento.toFixed(2)}%
-                      </span>
-                    </td>
-                    {categoryHeaders?.map(cat => {
-                      const rend = prov.categoryRendimientos[cat];
-                      return (
-                        <td key={cat} className="px-6 py-4 text-center font-medium text-zinc-300">
-                          {rend > 0 ? `${rend.toFixed(2)}%` : <span className="text-zinc-600">-</span>}
-                        </td>
-                      );
-                    })}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
+      <ProviderRanking events={rankingEvents} />
     </div>
   );
 }

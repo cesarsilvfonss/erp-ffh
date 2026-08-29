@@ -90,21 +90,12 @@ export default async function DashboardPage() {
     }
   });
 
-  const providerStats: Record<string, {
-    name: string,
-    globalLive: number,
-    globalCarcass: number,
-    categories: Record<string, { live: number, carcass: number }>
-  }> = {};
-
-  const allCategories = new Set<string>();
+  const rawEvents: any[] = [];
 
   rankingSlaughters.forEach(s => {
     const pName = s.batch.provider?.legalName || "Desconocido";
-    if (!providerStats[pName]) {
-      providerStats[pName] = { name: pName, globalLive: 0, globalCarcass: 0, categories: {} };
-    }
-    const pStats = providerStats[pName];
+    const date = s.batch.date;
+    const batchNumber = s.batch.batchNumber;
 
     const liveWeightByCat: Record<string, number> = {};
     if (s.batch.closure) {
@@ -119,40 +110,19 @@ export default async function DashboardPage() {
 
     s.details.forEach((d: any) => {
       const catName = d.item.name;
-      allCategories.add(catName);
-
-      if (!pStats.categories[catName]) {
-        pStats.categories[catName] = { live: 0, carcass: 0 };
+      const liveWt = liveWeightByCat[catName] || 0;
+      if (liveWt > 0) {
+        const rend = (d.weight / liveWt) * 100;
+        rawEvents.push({
+          providerName: pName,
+          category: catName,
+          batchNumber,
+          date,
+          rendimiento: rend
+        });
       }
-      pStats.categories[catName].carcass += d.weight;
-      pStats.globalCarcass += d.weight;
-    });
-
-    Object.entries(liveWeightByCat).forEach(([catName, liveWt]) => {
-      allCategories.add(catName);
-      if (!pStats.categories[catName]) {
-        pStats.categories[catName] = { live: 0, carcass: 0 };
-      }
-      pStats.categories[catName].live += liveWt;
-      pStats.globalLive += liveWt;
     });
   });
-
-  const categoryHeaders = Array.from(allCategories).sort();
-
-  const providerRanking = Object.values(providerStats).map(p => {
-    const globalRend = p.globalLive > 0 ? (p.globalCarcass / p.globalLive) * 100 : 0;
-    const catRend: Record<string, number> = {};
-    categoryHeaders.forEach(c => {
-      const stats = p.categories[c];
-      catRend[c] = (stats && stats.live > 0) ? (stats.carcass / stats.live) * 100 : 0;
-    });
-    return {
-      name: p.name,
-      globalRendimiento: globalRend,
-      categoryRendimientos: catRend
-    };
-  }).filter(p => p.globalRendimiento > 0).sort((a, b) => b.globalRendimiento - a.globalRendimiento);
 
   return (
     <DashboardUI 
@@ -163,8 +133,7 @@ export default async function DashboardPage() {
       receivables={receivables}
       payables={payables}
       previousCapital={previousCapital}
-      providerRanking={providerRanking}
-      categoryHeaders={categoryHeaders}
+      rankingEvents={rawEvents}
     />
   );
 }
