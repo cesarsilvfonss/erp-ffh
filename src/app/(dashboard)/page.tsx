@@ -122,11 +122,23 @@ export default async function DashboardPage() {
   });
 
   const rawEvents: any[] = [];
+  const providerStats: Record<string, {
+    name: string,
+    globalLive: number,
+    globalCarcass: number,
+    categories: Record<string, { live: number, carcass: number }>
+  }> = {};
+  const allCategories = new Set<string>();
 
   rankingSlaughters.forEach(s => {
     const pName = s.batch.provider?.legalName || "Desconocido";
     const date = s.batch.date;
     const batchNumber = s.batch.batchNumber;
+
+    if (!providerStats[pName]) {
+      providerStats[pName] = { name: pName, globalLive: 0, globalCarcass: 0, categories: {} };
+    }
+    const pStats = providerStats[pName];
 
     const liveWeightByCat: Record<string, number> = {};
     if (s.batch.closure) {
@@ -139,8 +151,26 @@ export default async function DashboardPage() {
       });
     }
 
+    const carcassWeightByCat: Record<string, number> = {};
     s.details.forEach((d: any) => {
-      const catName = d.item.name;
+      carcassWeightByCat[d.item.name] = (carcassWeightByCat[d.item.name] || 0) + d.weight;
+      
+      // Update provider global stats
+      pStats.globalCarcass += d.weight;
+      allCategories.add(d.item.name);
+      if (!pStats.categories[d.item.name]) pStats.categories[d.item.name] = { live: 0, carcass: 0 };
+      pStats.categories[d.item.name].carcass += d.weight;
+    });
+
+    Object.entries(liveWeightByCat).forEach(([catName, liveWt]) => {
+      allCategories.add(catName);
+      if (!pStats.categories[catName]) pStats.categories[catName] = { live: 0, carcass: 0 };
+      pStats.categories[catName].live += liveWt;
+      pStats.globalLive += liveWt;
+    });
+
+    // Populate raw events for the modal history
+    Object.entries(carcassWeightByCat).forEach(([catName, carcassWt]) => {
       const liveWt = liveWeightByCat[catName] || 0;
       if (liveWt > 0) {
         rawEvents.push({
@@ -148,13 +178,29 @@ export default async function DashboardPage() {
           category: catName,
           batchNumber,
           date,
-          carcass: d.weight,
+          carcass: carcassWt,
           live: liveWt,
-          rendimiento: (d.weight / liveWt) * 100
+          rendimiento: (carcassWt / liveWt) * 100
         });
       }
     });
   });
+
+  const categoryHeaders = Array.from(allCategories).sort();
+
+  const providerRanking = Object.values(providerStats).map(p => {
+    const globalRend = p.globalLive > 0 ? (p.globalCarcass / p.globalLive) * 100 : 0;
+    const catRend: Record<string, number> = {};
+    categoryHeaders.forEach(c => {
+      const stats = p.categories[c];
+      catRend[c] = (stats && stats.live > 0) ? (stats.carcass / stats.live) * 100 : 0;
+    });
+    return {
+      name: p.name,
+      globalRendimiento: globalRend,
+      categoryRendimientos: catRend
+    };
+  }).filter(p => p.globalRendimiento > 0).sort((a, b) => b.globalRendimiento - a.globalRendimiento);
 
   const profitabilityBatches = await prisma.batch.findMany({
     where: {
@@ -222,6 +268,8 @@ export default async function DashboardPage() {
       receivables={receivables}
       payables={payables}
       previousCapital={previousCapital}
+      providerRanking={providerRanking}
+      categoryHeaders={categoryHeaders}
       rankingEvents={rawEvents}
       profitEvents={profitEvents}
       monthlySales={monthlySales}

@@ -14,6 +14,8 @@ export function DashboardUI({
   receivables,
   payables,
   previousCapital,
+  providerRanking = [],
+  categoryHeaders = [],
   rankingEvents = [],
   profitEvents = [],
   monthlySales = 0,
@@ -27,6 +29,8 @@ export function DashboardUI({
   receivables: number;
   payables: number;
   previousCapital: number;
+  providerRanking?: any[];
+  categoryHeaders?: string[];
   rankingEvents?: any[];
   profitEvents?: any[];
   monthlySales?: number;
@@ -217,7 +221,7 @@ export function DashboardUI({
         </div>
       </div>
 
-      <ProviderRanking events={rankingEvents} />
+      <ProviderRanking ranking={providerRanking} headers={categoryHeaders} events={rankingEvents} />
 
       <ProfitRanking events={profitEvents} />
     </div>
