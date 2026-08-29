@@ -14,9 +14,16 @@ export default async function DashboardPage() {
     redirect("/operaciones/faena");
   }
 
-  const now = new Date();
-  const start = startOfMonth(now);
-  const end = endOfMonth(now);
+  const lastClosure = await prisma.monthlyClosure.findFirst({
+    where: { status: 'CLOSED' },
+    orderBy: [
+      { year: 'desc' },
+      { month: 'desc' }
+    ]
+  });
+  
+  const previousCapital = lastClosure ? lastClosure.totalCapital : 2717386896;
+  const start = lastClosure?.closedAt ? lastClosure.closedAt : new Date("2026-07-25T00:00:00Z");
 
   const [
     salesResult,
@@ -24,16 +31,16 @@ export default async function DashboardPage() {
     purchasesResult
   ] = await Promise.all([
     prisma.sale.aggregate({
-      where: { date: { gte: start, lte: end }, status: { not: "CANCELLED" } },
+      where: { date: { gte: start }, status: { not: "CANCELLED" } },
       _sum: { totalValue: true }
     }),
     prisma.expense.aggregate({
-      where: { date: { gte: start, lte: end } },
+      where: { date: { gte: start } },
       _sum: { amount: true }
     }),
     prisma.batchClosure.aggregate({
       where: { 
-        batch: { date: { gte: start, lte: end } }
+        batch: { date: { gte: start } }
       },
       _sum: { totalValue: true }
     })
@@ -89,16 +96,6 @@ export default async function DashboardPage() {
     }
   });
   const liveStockValue = liveStockClosures.reduce((acc, closure) => acc + closure.totalValue, 0);
-
-  // 5. Capital Anterior (Último Cierre)
-  const lastClosure = await prisma.monthlyClosure.findFirst({
-    where: { status: 'CLOSED' },
-    orderBy: [
-      { year: 'desc' },
-      { month: 'desc' }
-    ]
-  });
-  const previousCapital = lastClosure ? lastClosure.totalCapital : 2717386896;
 
   // 6. Ranking de Rendimiento por Proveedor
   const rankingSlaughters = await prisma.slaughter.findMany({
