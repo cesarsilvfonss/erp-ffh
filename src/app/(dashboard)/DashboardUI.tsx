@@ -221,7 +221,7 @@ export function DashboardUI({
         </div>
       </div>
 
-      <ProviderRanking ranking={providerRanking} headers={categoryHeaders} events={rankingEvents} />
+      <ProviderRanking events={rankingEvents} />
 
       <ProfitRanking events={profitEvents} />
     </div>
