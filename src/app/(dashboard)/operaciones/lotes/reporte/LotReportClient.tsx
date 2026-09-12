@@ -78,37 +78,37 @@ export function LotReportClient({ allBatches, reportData }: { allBatches: any[],
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="bg-zinc-900/40 print:bg-gray-50 border border-zinc-800 print:border-gray-300 rounded-xl p-5">
               <h3 className="text-zinc-400 print:text-gray-600 font-medium text-sm flex items-center gap-2 mb-4">
-                <Store className="w-4 h-4 text-emerald-500" /> Inversión (Compra)
+                <Store className="w-4 h-4 text-emerald-500 print:text-green-700" /> Inversión (Compra)
               </h3>
               <div className="grid grid-cols-2 gap-4 mb-4">
                 <div>
-                  <p className="text-zinc-500 print:text-gray-500 text-xs uppercase">Animales</p>
+                  <p className="text-zinc-500 print:text-gray-700 text-xs uppercase">Animales</p>
                   <p className="text-xl font-bold">{reportData.purchase.quantity} cabezas</p>
                 </div>
                 <div>
-                  <p className="text-zinc-500 print:text-gray-500 text-xs uppercase">Costo Promedio</p>
+                  <p className="text-zinc-500 print:text-gray-700 text-xs uppercase">Costo Promedio</p>
                   <p className="text-xl font-bold">{formatCurrency(reportData.purchase.avgCost)}/kg</p>
                 </div>
                 <div>
-                  <p className="text-zinc-500 print:text-gray-500 text-xs uppercase">Kilaje Vivo Total</p>
+                  <p className="text-zinc-500 print:text-gray-700 text-xs uppercase">Kilaje Vivo Total</p>
                   <p className="text-xl font-bold">{reportData.purchase.weight.toLocaleString("es-PY")} kg</p>
                 </div>
                 <div>
-                  <p className="text-zinc-500 print:text-gray-500 text-xs uppercase text-emerald-500">Costo Total Compra</p>
+                  <p className="text-zinc-500 print:text-gray-700 text-xs uppercase text-emerald-500">Costo Total Compra</p>
                   <p className="text-xl font-bold text-emerald-400 print:text-black">{formatCurrency(reportData.purchase.totalCost)}</p>
                 </div>
               </div>
 
               {reportData.purchase.breakdown?.length > 0 && (
                 <div className="mt-4 pt-4 border-t border-zinc-800/50">
-                  <p className="text-zinc-500 print:text-gray-500 text-xs uppercase mb-2">Desglose por Categoría</p>
+                  <p className="text-zinc-500 print:text-gray-700 text-xs uppercase mb-2">Desglose por Categoría</p>
                   <div className="space-y-2">
                     {reportData.purchase.breakdown.map((cat: any, i: number) => (
                       <div key={i} className="flex justify-between items-center text-sm">
                         <span className="text-zinc-300 font-medium">{cat.itemName}</span>
                         <div className="text-right">
-                          <span className="text-zinc-400 mr-3">{cat.weight.toLocaleString("es-PY")} kg ({formatCurrency(cat.avgCost)}/kg)</span>
-                          <span className="font-bold text-emerald-400/80">{formatCurrency(cat.totalCost)}</span>
+                          <span className="text-zinc-400 print:text-gray-900 mr-3">{cat.weight.toLocaleString("es-PY")} kg ({formatCurrency(cat.avgCost)}/kg)</span>
+                          <span className="font-bold text-emerald-400/80 print:text-green-700">{formatCurrency(cat.totalCost)}</span>
                         </div>
                       </div>
                     ))}
@@ -119,37 +119,37 @@ export function LotReportClient({ allBatches, reportData }: { allBatches: any[],
 
             <div className="bg-zinc-900/40 print:bg-gray-50 border border-zinc-800 print:border-gray-300 rounded-xl p-5">
               <h3 className="text-zinc-400 print:text-gray-600 font-medium text-sm flex items-center gap-2 mb-4">
-                <Beef className="w-4 h-4 text-emerald-500" /> Rendimiento de Faena
+                <Beef className="w-4 h-4 text-emerald-500 print:text-green-700" /> Rendimiento de Faena
               </h3>
               <div className="grid grid-cols-2 gap-4 mb-4">
                 <div>
-                  <p className="text-zinc-500 print:text-gray-500 text-xs uppercase">Kilos Gancho Producidos</p>
+                  <p className="text-zinc-500 print:text-gray-700 text-xs uppercase">Kilos Gancho Producidos</p>
                   <p className="text-xl font-bold">{reportData.slaughter.weight.toLocaleString("es-PY")} kg</p>
                 </div>
                 <div>
-                  <p className="text-zinc-500 print:text-gray-500 text-xs uppercase">Rendimiento Estimado</p>
+                  <p className="text-zinc-500 print:text-gray-700 text-xs uppercase">Rendimiento Promedio</p>
                   <p className="text-xl font-bold text-emerald-400 print:text-black">{reportData.slaughter.performance.toFixed(2)}%</p>
                 </div>
                 <div>
-                  <p className="text-zinc-500 print:text-gray-500 text-xs uppercase">Stock en Cámara (Restante)</p>
+                  <p className="text-zinc-500 print:text-gray-700 text-xs uppercase">Stock en Cámara (Restante)</p>
                   <p className="text-xl font-bold">{reportData.inventory.stockKg.toLocaleString("es-PY")} kg</p>
                 </div>
                 <div>
-                  <p className="text-zinc-500 print:text-gray-500 text-xs uppercase text-amber-500">Valor Stock Cámara</p>
+                  <p className="text-zinc-500 print:text-gray-700 text-xs uppercase text-amber-500">Valor Stock Cámara</p>
                   <p className="text-xl font-bold text-amber-400 print:text-black">{formatCurrency(reportData.inventory.stockValue)}</p>
                 </div>
               </div>
 
               {reportData.slaughter.breakdown?.length > 0 && (
                 <div className="mt-4 pt-4 border-t border-zinc-800/50">
-                  <p className="text-zinc-500 print:text-gray-500 text-xs uppercase mb-2">Desglose por Categoría</p>
+                  <p className="text-zinc-500 print:text-gray-700 text-xs uppercase mb-2">Desglose por Categoría</p>
                   <div className="space-y-2">
                     {reportData.slaughter.breakdown.map((cat: any, i: number) => (
                       <div key={i} className="flex justify-between items-center text-sm">
                         <span className="text-zinc-300 font-medium">{cat.itemName}</span>
                         <div className="text-right">
-                          <span className="font-bold text-zinc-200 mr-3">{cat.weight.toLocaleString("es-PY")} kg gancho</span>
-                          <span className="text-emerald-400/80 font-bold">{cat.rendimiento.toFixed(2)}% rend</span>
+                          <span className="font-bold text-zinc-200 print:text-gray-900 mr-3">{cat.weight.toLocaleString("es-PY")} kg gancho</span>
+                          <span className="text-emerald-400/80 print:text-green-700 font-bold">{cat.rendimiento.toFixed(2)}% rend</span>
                         </div>
                       </div>
                     ))}
@@ -161,17 +161,17 @@ export function LotReportClient({ allBatches, reportData }: { allBatches: any[],
 
           {/* Cuadro Financiero Principal */}
           <div className="bg-emerald-500/5 print:bg-white border border-emerald-500/20 print:border-gray-300 rounded-xl p-6 overflow-hidden print:overflow-visible">
-            <h3 className="text-emerald-500 font-bold mb-6 flex items-center gap-2">
+            <h3 className="text-emerald-500 print:text-green-700 font-bold mb-6 flex items-center gap-2">
               <TrendingUp className="w-5 h-5" /> Liquidación Realizada del Lote
             </h3>
             
             <div className="space-y-4">
               <div className="flex justify-between items-center pb-2 border-b border-zinc-800/50 print:border-gray-200">
-                <span className="text-zinc-300 print:text-gray-700 font-medium">Ingresos por Ventas (Solo Facturado)</span>
+                <span className="text-zinc-300 print:text-gray-900 font-medium">Ingresos por Ventas (Solo Facturado)</span>
                 <span className="text-lg font-bold text-emerald-400 print:text-black">{formatCurrency(reportData.sales.revenue)}</span>
               </div>
               <div className="flex justify-between items-center pb-2 border-b border-zinc-800/50 print:border-gray-200">
-                <span className="text-zinc-300 print:text-gray-700 font-medium">(-) Costo de Mercadería Vendida (Costo Carne)</span>
+                <span className="text-zinc-300 print:text-gray-900 font-medium">(-) Costo de Mercadería Vendida (Costo Carne)</span>
                 <span className="text-lg font-bold text-rose-400 print:text-black">-{formatCurrency(reportData.sales.costOfGoods)}</span>
               </div>
               <div className="flex justify-between items-center pb-2 border-b border-zinc-800/50 print:border-gray-200 bg-zinc-900/30 print:bg-gray-50 p-2 rounded">
@@ -180,11 +180,11 @@ export function LotReportClient({ allBatches, reportData }: { allBatches: any[],
               </div>
 
               <div className="flex justify-between items-center pb-2 border-b border-zinc-800/50 print:border-gray-200 mt-4">
-                <span className="text-zinc-400 print:text-gray-700">(-) Mermas de Cámara ({reportData.inventory.mermasKg} kg)</span>
+                <span className="text-zinc-400 print:text-gray-900">(-) Mermas de Cámara ({reportData.inventory.mermasKg} kg)</span>
                 <span className="text-rose-400/80 font-medium">-{formatCurrency(reportData.inventory.mermasCost)}</span>
               </div>
               <div className="flex justify-between items-center pb-2 border-b border-zinc-800/50 print:border-gray-200">
-                <span className="text-zinc-400 print:text-gray-700">(-) Gastos Operativos Asignados</span>
+                <span className="text-zinc-400 print:text-gray-900">(-) Gastos Operativos Asignados</span>
                 <span className="text-rose-400/80 font-medium">-{formatCurrency(reportData.expenses.total)}</span>
               </div>
               
@@ -195,14 +195,14 @@ export function LotReportClient({ allBatches, reportData }: { allBatches: any[],
                     {formatCurrency(reportData.results.netResult)}
                   </div>
                   {reportData.purchase.totalCost > 0 && (
-                    <div className={`text-lg font-bold mt-1 ${reportData.results.netResult >= 0 ? "text-emerald-400/80" : "text-rose-500/80"}`}>
+                    <div className={`text-lg font-bold mt-1 ${reportData.results.netResult >= 0 ? "text-emerald-400/80 print:text-green-700" : "text-rose-500/80"}`}>
                       % Utilidad sobre la compra: {((reportData.results.netResult / reportData.purchase.totalCost) * 100).toFixed(2)}%
                     </div>
                   )}
                 </div>
               </div>
             </div>
-            <p className="text-xs text-zinc-500 print:text-gray-500 mt-4 italic">
+            <p className="text-xs text-zinc-500 print:text-gray-700 mt-4 italic">
               * El Resultado Neto refleja únicamente la ganancia materializada sobre la carne ya vendida, descontando todos los gastos y mermas totales del lote. El remanente en cámara ({formatCurrency(reportData.inventory.stockValue)}) representa rentabilidad potencial futura.
             </p>
           </div>
@@ -213,7 +213,7 @@ export function LotReportClient({ allBatches, reportData }: { allBatches: any[],
             {/* Gastos */}
             <div className="bg-zinc-900/40 print:bg-white rounded-xl border border-zinc-800/50 print:border-gray-300 overflow-hidden print:overflow-visible print:break-inside-auto">
               <div className="p-4 bg-zinc-800/50 print:bg-gray-100 border-b border-zinc-800/50 print:border-gray-300 flex items-center justify-between">
-                <h4 className="font-bold text-zinc-200 print:text-black flex items-center gap-2"><DollarSign className="w-4 h-4 text-emerald-500"/> Detalle de Gastos</h4>
+                <h4 className="font-bold text-zinc-200 print:text-black flex items-center gap-2"><DollarSign className="w-4 h-4 text-emerald-500 print:text-green-700"/> Detalle de Gastos</h4>
               </div>
               <div className="overflow-x-auto print:overflow-visible">
                 <table className="w-full text-left text-sm">
@@ -245,7 +245,7 @@ export function LotReportClient({ allBatches, reportData }: { allBatches: any[],
             {/* Ventas */}
             <div className="bg-zinc-900/40 print:bg-white rounded-xl border border-zinc-800/50 print:border-gray-300 overflow-hidden print:overflow-visible print:break-inside-auto">
               <div className="p-4 bg-zinc-800/50 print:bg-gray-100 border-b border-zinc-800/50 print:border-gray-300 flex items-center justify-between">
-                <h4 className="font-bold text-zinc-200 print:text-black flex items-center gap-2"><FileText className="w-4 h-4 text-emerald-500"/> Historial de Ventas</h4>
+                <h4 className="font-bold text-zinc-200 print:text-black flex items-center gap-2"><FileText className="w-4 h-4 text-emerald-500 print:text-green-700"/> Historial de Ventas</h4>
               </div>
               <div className="overflow-x-auto print:overflow-visible">
                 <table className="w-full text-left text-sm">
@@ -269,8 +269,8 @@ export function LotReportClient({ allBatches, reportData }: { allBatches: any[],
                         <td className="px-4 py-3 font-medium">{s.invoiceNumber || "S/N"}</td>
                         <td className="px-4 py-3">{s.clientName}</td>
                         <td className="px-4 py-3 text-right">{s.quantity.toLocaleString("es-PY")}</td>
-                        <td className="px-4 py-3 text-right text-zinc-400">{formatCurrency(s.price)}</td>
-                        <td className="px-4 py-3 text-right text-emerald-400 font-bold">{formatCurrency(s.total)}</td>
+                        <td className="px-4 py-3 text-right text-zinc-400 print:text-gray-900">{formatCurrency(s.price)}</td>
+                        <td className="px-4 py-3 text-right text-emerald-400 print:text-green-700 font-bold">{formatCurrency(s.total)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -279,7 +279,7 @@ export function LotReportClient({ allBatches, reportData }: { allBatches: any[],
                       <td colSpan={3} className="px-4 py-3 text-right">Totales Realizados:</td>
                       <td className="px-4 py-3 text-right">{reportData.sales.totalKg.toLocaleString("es-PY")} Kg</td>
                       <td className="px-4 py-3 text-right">-</td>
-                      <td className="px-4 py-3 text-right text-emerald-500">{formatCurrency(reportData.sales.revenue)}</td>
+                      <td className="px-4 py-3 text-right text-emerald-500 print:text-green-700 font-bold">{formatCurrency(reportData.sales.revenue)}</td>
                     </tr>
                   </tfoot>
                 </table>
@@ -288,7 +288,7 @@ export function LotReportClient({ allBatches, reportData }: { allBatches: any[],
 
           </div>
           
-          <div className="mt-12 text-center text-zinc-500 print:text-gray-500 text-xs pb-8 print:pb-0">
+          <div className="mt-12 text-center text-zinc-500 print:text-gray-700 text-xs pb-8 print:pb-0">
             Reporte generado automáticamente por Sistema FFH.
           </div>
         </div>

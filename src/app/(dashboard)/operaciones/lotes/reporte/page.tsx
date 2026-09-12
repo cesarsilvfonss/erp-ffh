@@ -125,6 +125,10 @@ export default async function LotReportPage({ searchParams }: { searchParams: Pr
           });
         });
       }
+      
+      const calculatedSlaughterWeight = slaughterBreakdown.reduce((acc, c) => acc + c.weight, 0);
+      slaughterWeight = calculatedSlaughterWeight > 0 ? calculatedSlaughterWeight : slaughterWeight;
+      performance = purchaseWeight > 0 ? (slaughterWeight / purchaseWeight) * 100 : 0;
 
       // 4. Ventas y Mermas desde Inventario
       let totalKgSold = 0;
