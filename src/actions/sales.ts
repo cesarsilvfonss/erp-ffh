@@ -46,11 +46,20 @@ export async function createSale(data: {
       const rentRetention = data.rentRetention || 0;
       const netValue = data.netValue || totalValue;
 
+      // 1.5. Obtener el cliente para saber su plazo de pago
+      const client = await tx.client.findUnique({
+        where: { id: data.clientId }
+      });
+      const paymentTermDays = client?.paymentTermDays || 0;
+      const saleDate = new Date(data.date + "T12:00:00Z");
+      const dueDate = new Date(saleDate);
+      dueDate.setDate(dueDate.getDate() + paymentTermDays);
+
       // 2. Crear la Venta
       const sale = await tx.sale.create({
         data: {
           clientId: data.clientId,
-          date: new Date(data.date + "T12:00:00Z"),
+          date: saleDate,
           invoiceNumber: data.invoiceNumber || null,
           status: "CONFIRMED",
           totalValue,
@@ -76,8 +85,8 @@ export async function createSale(data: {
         data: {
           saleId: sale.id,
           clientId: data.clientId,
-          amount: totalValue, // Generado por el valor bruto
-          dueDate: new Date(data.date + "T12:00:00Z"), // O sumar días según término del cliente
+          amount: totalValue,
+          dueDate: dueDate,
           status: "PENDING"
         }
       });
