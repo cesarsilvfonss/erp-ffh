@@ -7,6 +7,7 @@ import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
 
 import { TransferModal } from "./TransferModal";
+import { CapitalInjectionModal } from "./CapitalInjectionModal";
 
 export const dynamic = "force-dynamic";
 
@@ -27,6 +28,10 @@ export default async function BancosPage() {
       }
     },
     orderBy: { createdAt: "desc" }
+  });
+
+  const providers = await prisma.provider.findMany({
+    orderBy: { legalName: "asc" }
   });
 
   // Mapear inyectando el saldo real y limitando las transacciones a 10 para la UI
@@ -55,7 +60,8 @@ export default async function BancosPage() {
           <p className="text-zinc-400 text-sm mt-1">Gestión de bancos y movimientos.</p>
         </div>
         
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
+          <CapitalInjectionModal banks={banksWithBalance} providers={providers} />
           <TransferModal banks={banksWithBalance} />
           <BankForm currencies={currencies} />
         </div>

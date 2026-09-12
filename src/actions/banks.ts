@@ -94,3 +94,43 @@ export async function adjustBankBalance(data: {
     return { success: false, error: error.message };
   }
 }
+
+export async function injectCapital(data: {
+  bankAccountId: string;
+  providerId: string;
+  providerName: string;
+  date: Date;
+  amount: number;
+}) {
+  try {
+    const { getServerSession } = await import("next-auth/next");
+    const { authOptions } = await import("@/lib/auth");
+    
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      throw new Error("No autenticado.");
+    }
+
+    await checkPeriodClosure(data.date);
+
+    await prisma.transaction.create({
+      data: {
+        bankAccountId: data.bankAccountId,
+        date: data.date,
+        type: "INCOME",
+        amount: data.amount,
+        concept: `Inyección de Capital: ${data.providerName}`,
+        reference: "INYECCIÓN",
+        userId: session.user.id
+      }
+    });
+
+    revalidatePath("/operaciones/finanzas/bancos");
+    revalidatePath("/");
+    
+    return { success: true };
+  } catch (error: any) {
+    console.error("Error injecting capital:", error);
+    return { success: false, error: error.message };
+  }
+}
