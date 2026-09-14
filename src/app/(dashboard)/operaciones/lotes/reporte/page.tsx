@@ -33,6 +33,7 @@ export default async function LotReportPage({ searchParams }: { searchParams: Pr
       where: { id: batchId },
       include: {
         provider: true,
+        slaughterhouse: true,
         closure: {
           include: {
             prices: { include: { item: true } }

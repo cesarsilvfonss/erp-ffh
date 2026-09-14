@@ -67,11 +67,18 @@ export function LotReportClient({ allBatches, reportData }: { allBatches: any[],
             <h1 className="text-3xl font-bold text-emerald-400 print:text-black mb-2">
               Reporte de Lote #{reportData.batch.batchNumber}
             </h1>
-            <p className="text-zinc-400 print:text-gray-600 flex flex-wrap items-center gap-4">
-              <span className="flex items-center gap-1"><Store className="w-4 h-4" /> Proveedor: {reportData.batch.provider?.legalName}</span>
-              <span className="flex items-center gap-1"><Calendar className="w-4 h-4" /> Fecha: {new Date(reportData.batch.date).toLocaleDateString("es-PY")}</span>
-              <span className="flex items-center gap-1">Estado: {reportData.batch.status}</span>
-            </p>
+            <div className="text-zinc-400 print:text-gray-600 flex flex-col gap-2 mt-2">
+              <div className="flex flex-wrap items-center gap-4">
+                <span className="flex items-center gap-1"><Store className="w-4 h-4" /> Proveedor: {reportData.batch.provider?.legalName}</span>
+                <span className="flex items-center gap-1"><Calendar className="w-4 h-4" /> Fecha: {new Date(reportData.batch.date).toLocaleDateString("es-PY")}</span>
+                <span className="flex items-center gap-1">Estado: {reportData.batch.status}</span>
+              </div>
+              {reportData.batch.slaughterhouse && (
+                <div className="flex items-center gap-1">
+                  <Beef className="w-4 h-4" /> Local de Faena: {reportData.batch.slaughterhouse.legalName}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Tarjetas de Resumen Operativo */}
