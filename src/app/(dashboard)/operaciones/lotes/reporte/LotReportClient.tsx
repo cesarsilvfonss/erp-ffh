@@ -73,11 +73,22 @@ export function LotReportClient({ allBatches, reportData }: { allBatches: any[],
                 <span className="flex items-center gap-1"><Calendar className="w-4 h-4" /> Fecha: {new Date(reportData.batch.date).toLocaleDateString("es-PY")}</span>
                 <span className="flex items-center gap-1">Estado: {reportData.batch.status}</span>
               </div>
-              {reportData.batch.slaughterhouse && (
-                <div className="flex items-center gap-1">
-                  <Beef className="w-4 h-4" /> Local de Faena: {reportData.batch.slaughterhouse.legalName}
-                </div>
-              )}
+              <div className="flex flex-wrap items-center gap-4">
+                <span className="flex items-center gap-1">
+                  <TrendingUp className="w-4 h-4" /> Modalidad: {
+                    reportData.batch.isLiveSale 
+                      ? "Compra en pie - Venta peso vivo" 
+                      : reportData.batch.isHookPurchase 
+                        ? "Compra al gancho" 
+                        : "Compra en pie para faena"
+                  }
+                </span>
+                {!reportData.batch.isLiveSale && reportData.batch.slaughterhouse && (
+                  <span className="flex items-center gap-1">
+                    <Beef className="w-4 h-4" /> Local de Faena: {reportData.batch.slaughterhouse.legalName}
+                  </span>
+                )}
+              </div>
             </div>
           </div>
 
