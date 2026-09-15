@@ -4,6 +4,7 @@ import { Beef, CircleDollarSign, TrendingUp, Users, AlertTriangle, Receipt, Arro
 import { motion } from "framer-motion";
 import { ProviderRanking } from "./ProviderRanking";
 import { ProfitRanking } from "./ProfitRanking";
+import { ExpenseByCategory } from "./ExpenseByCategory";
 import Link from "next/link";
 
 export function DashboardUI({ 
@@ -13,14 +14,16 @@ export function DashboardUI({
   walletChecks,
   receivables,
   payables,
-  previousCapital,
+  previousCapital = 0,
+  lastClosureDate = null,
   providerRanking = [],
   categoryHeaders = [],
   rankingEvents = [],
   profitEvents = [],
   monthlySales = 0,
   monthlyPurchases = 0,
-  monthlyExpenses = 0
+  monthlyExpenses = 0,
+  expensesByCategory = []
 }: {
   bankBalance: number;
   inventoryValue: number;
@@ -28,7 +31,8 @@ export function DashboardUI({
   walletChecks: number;
   receivables: number;
   payables: number;
-  previousCapital: number;
+  previousCapital?: number;
+  lastClosureDate?: Date | null;
   providerRanking?: any[];
   categoryHeaders?: string[];
   rankingEvents?: any[];
@@ -36,6 +40,7 @@ export function DashboardUI({
   monthlySales?: number;
   monthlyPurchases?: number;
   monthlyExpenses?: number;
+  expensesByCategory?: { category: string; amount: number }[];
 }) {
   const formatCurrency = (value: number) => {
     return value.toLocaleString("es-PY", { style: "currency", currency: "PYG", maximumFractionDigits: 0 });
@@ -224,6 +229,8 @@ export function DashboardUI({
       <ProviderRanking events={rankingEvents} />
 
       <ProfitRanking events={profitEvents} />
+
+      <ExpenseByCategory expenses={expensesByCategory} />
     </div>
   );
 }

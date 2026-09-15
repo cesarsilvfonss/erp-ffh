@@ -50,6 +50,20 @@ export default async function DashboardPage() {
   const monthlyExpenses = expensesResult._sum?.amount || 0;
   const monthlyPurchases = purchasesResult._sum?.totalValue || 0;
 
+  const expenseCategoriesData = await prisma.expenseCategory.findMany({
+    include: {
+      expenses: {
+        where: { date: { gte: start } }
+      }
+    }
+  });
+
+  const expensesByCategory = expenseCategoriesData.map(cat => ({
+    category: cat.name,
+    amount: cat.expenses.reduce((acc, exp) => acc + exp.amount, 0)
+  })).filter(c => c.amount > 0)
+    .sort((a, b) => b.amount - a.amount);
+
   // 1. Saldo Bancario
   const bankAccounts = await prisma.bankAccount.findMany({
     include: { transactions: true }
@@ -272,6 +286,7 @@ export default async function DashboardPage() {
       monthlySales={monthlySales}
       monthlyPurchases={monthlyPurchases}
       monthlyExpenses={monthlyExpenses}
+      expensesByCategory={expensesByCategory}
     />
   );
 }
