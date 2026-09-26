@@ -8,14 +8,19 @@ export function CloseFaenaButton({
   slaughterId, 
   totalBoughtHeads, 
   totalFaenaHeads,
-  disabled 
+  disabled,
+  userRole
 }: { 
   slaughterId: string;
   totalBoughtHeads: number;
   totalFaenaHeads: number;
   disabled?: boolean;
+  userRole?: string;
 }) {
   const [loading, setLoading] = useState(false);
+  const [faenaDate, setFaenaDate] = useState("");
+  
+  const isAdmin = userRole === "ADMIN" || userRole === "ADMINISTRATION";
 
   async function handleClose() {
     if (totalFaenaHeads !== totalBoughtHeads) {
@@ -29,11 +34,10 @@ export function CloseFaenaButton({
 
     setLoading(true);
     
-    // We would calculate yields here or in the server. 
-    // In this case, we send dummy values to the server and the PDF will do the exact math, 
-    // or we can calculate real ones. The user said yield should be in PDF. We can just send 0 for now.
-    
-    const res = await closeFaena(slaughterId, { totalWeight: 0, yieldPercent: 0 });
+    // Convertir la fecha a formato Date si el admin seleccionó una
+    const dateObj = (isAdmin && faenaDate) ? new Date(faenaDate + "T12:00:00Z") : undefined;
+
+    const res = await closeFaena(slaughterId, { totalWeight: 0, yieldPercent: 0, date: dateObj });
     
     if (!res.success) {
       alert("Error cerrando faena: " + res.error);
@@ -43,13 +47,27 @@ export function CloseFaenaButton({
   }
 
   return (
-    <button
-      onClick={handleClose}
-      disabled={disabled || loading}
-      className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 disabled:bg-zinc-800 disabled:text-zinc-500 text-zinc-950 px-6 py-2.5 rounded-lg font-bold transition-all shadow-lg shadow-emerald-500/20"
-    >
-      <CheckCircle className="w-5 h-5" />
-      {loading ? "Cerrando..." : "Cerrar Faena"}
-    </button>
+    <div className="flex items-center gap-4">
+      {isAdmin && !disabled && (
+        <div className="flex items-center gap-2">
+          <label className="text-xs text-zinc-400">Fecha faena (Opcional):</label>
+          <input 
+            type="date" 
+            value={faenaDate}
+            onChange={(e) => setFaenaDate(e.target.value)}
+            className="bg-zinc-900 border border-zinc-700 text-zinc-100 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-emerald-500"
+          />
+        </div>
+      )}
+      
+      <button
+        onClick={handleClose}
+        disabled={disabled || loading}
+        className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 disabled:bg-zinc-800 disabled:text-zinc-500 text-zinc-950 px-6 py-2.5 rounded-lg font-bold transition-all shadow-lg shadow-emerald-500/20"
+      >
+        <CheckCircle className="w-5 h-5" />
+        {loading ? "Cerrando..." : "Cerrar Faena"}
+      </button>
+    </div>
   );
 }

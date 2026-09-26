@@ -123,6 +123,7 @@ export default async function FaenaDetailsPage({ params }: { params: Promise<{ i
                 totalBoughtHeads={totalBoughtHeads}
                 totalFaenaHeads={totalFaenaHeads}
                 disabled={slaughter.details.length === 0}
+                userRole={userRole}
               />
             )
           ) : (

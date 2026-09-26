@@ -89,16 +89,18 @@ export async function deleteFaenaDetail(id: string, slaughterId: string) {
   }
 }
 
-export async function closeFaena(slaughterId: string, payload: { totalWeight: number, yieldPercent: number }) {
+export async function closeFaena(slaughterId: string, payload: { totalWeight: number, yieldPercent: number, date?: Date }) {
   try {
-    await checkPeriodClosure(new Date());
+    const actionDate = payload.date || new Date();
+    await checkPeriodClosure(actionDate);
 
     await prisma.$transaction(async (tx) => {
       const slaughter = await tx.slaughter.update({
         where: { id: slaughterId },
         data: { 
           totalCarcassWeight: payload.totalWeight,
-          performance: payload.yieldPercent
+          performance: payload.yieldPercent,
+          ...(payload.date && { date: payload.date })
         },
         include: { details: true, batch: { include: { closure: { include: { prices: true } } } } }
       });
@@ -129,7 +131,8 @@ export async function closeFaena(slaughterId: string, payload: { totalWeight: nu
             itemId: itemId,
             initialStock: totalItemWeight,
             currentStock: totalItemWeight,
-            unitCost: unitCost
+            unitCost: unitCost,
+            createdAt: actionDate
           }
         });
 
@@ -140,6 +143,7 @@ export async function closeFaena(slaughterId: string, payload: { totalWeight: nu
             itemId: itemId,
             type: "IN",
             quantity: totalItemWeight,
+            createdAt: actionDate,
             referenceId: slaughterId,
             concept: `Faena Lote #${slaughter.batch.batchNumber}`
           }
