@@ -96,7 +96,7 @@ export function PayablePaymentModal({
             <div>
               <label className="block text-sm font-medium text-zinc-400 mb-1.5">Fecha de Pago *</label>
               <input
-                type="date"
+                type="date" max={new Date().toISOString().split("T")[0]}
                 required
                 value={date}
                 onChange={e => setDate(e.target.value)}

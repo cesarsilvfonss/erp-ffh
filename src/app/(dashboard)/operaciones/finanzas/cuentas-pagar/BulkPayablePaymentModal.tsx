@@ -91,7 +91,7 @@ export function BulkPayablePaymentModal({
             <div className="space-y-2">
               <label className="text-sm font-medium text-zinc-300">Fecha de Pago</label>
               <input 
-                type="date"
+                type="date" max={new Date().toISOString().split("T")[0]}
                 required
                 value={date}
                 onChange={(e) => setDate(e.target.value)}

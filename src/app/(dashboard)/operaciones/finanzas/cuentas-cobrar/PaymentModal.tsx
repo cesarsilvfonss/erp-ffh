@@ -197,7 +197,7 @@ export function PaymentModal({
             <div>
               <label className="block text-sm font-medium text-zinc-400 mb-1.5">Fecha de Cobro *</label>
               <input 
-                type="date" 
+                type="date" max={new Date().toISOString().split("T")[0]} 
                 name="date"
                 required
                 value={date}
