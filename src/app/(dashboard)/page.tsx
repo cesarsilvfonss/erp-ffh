@@ -24,7 +24,7 @@ export default async function DashboardPage() {
   
   // El capital base inicial es 3.124.115.358 si no hay cierres anteriores.
   const previousCapital = lastClosure ? lastClosure.totalCapital : 3124115358;
-  const start = lastClosure?.closedAt ? lastClosure.closedAt : new Date("2026-07-25T00:00:00Z");
+  const start = lastClosure?.closedAt ? lastClosure.closedAt : new Date("2026-07-26T00:00:00Z");
 
   const [
     salesResult,
@@ -288,6 +288,7 @@ export default async function DashboardPage() {
       monthlyPurchases={monthlyPurchases}
       monthlyExpenses={monthlyExpenses}
       expensesByCategory={expensesByCategory}
+      startDate={start}
     />
   );
 }

@@ -23,7 +23,8 @@ export function DashboardUI({
   monthlySales = 0,
   monthlyPurchases = 0,
   monthlyExpenses = 0,
-  expensesByCategory = []
+  expensesByCategory = [],
+  startDate
 }: {
   bankBalance: number;
   inventoryValue: number;
@@ -41,6 +42,7 @@ export function DashboardUI({
   monthlyPurchases?: number;
   monthlyExpenses?: number;
   expensesByCategory?: { category: string; amount: number }[];
+  startDate?: Date;
 }) {
   const formatCurrency = (value: number) => {
     return value.toLocaleString("es-PY", { style: "currency", currency: "PYG", maximumFractionDigits: 0 });
@@ -58,13 +60,32 @@ export function DashboardUI({
   const currentTotalCapital = bankBalance + walletChecks + receivables + inventoryValue + liveStockValue - payables;
   const capitalVariation = currentTotalCapital - previousCapital;
   const growthPercentage = previousCapital > 0 ? (capitalVariation / previousCapital) * 100 : 0;
+  
+  const startD = startDate || new Date("2026-07-26T00:00:00Z");
+  const today = new Date();
+  const daysOfPeriod = Math.max(1, Math.floor((today.getTime() - startD.getTime()) / (1000 * 60 * 60 * 24)));
+  const monthlyGrowth = (growthPercentage / daysOfPeriod) * 30;
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start justify-between">
         <div>
           <h1 className="text-2xl font-bold text-zinc-100">Dashboard Gerencial</h1>
-          <p className="text-zinc-400 text-sm mt-1">Resumen en tiempo real de operaciones y finanzas.</p>
+          <p className="text-zinc-400 text-sm mt-1 mb-4">Resumen en tiempo real de operaciones y finanzas.</p>
+          <div className="flex flex-wrap gap-6 text-xs font-medium bg-zinc-900/80 p-3.5 rounded-lg border border-zinc-800">
+            <div className="flex flex-col">
+              <span className="text-zinc-500 mb-0.5">Fecha inicial del ejercicio</span>
+              <span className="text-emerald-400 font-bold">{startD.toLocaleDateString("es-PY")}</span>
+            </div>
+            <div className="flex flex-col">
+              <span className="text-zinc-500 mb-0.5">Fecha actual</span>
+              <span className="text-zinc-200">{today.toLocaleDateString("es-PY")}</span>
+            </div>
+            <div className="flex flex-col">
+              <span className="text-zinc-500 mb-0.5">Días del ejercicio</span>
+              <span className="text-zinc-200">{daysOfPeriod} días</span>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -215,8 +236,13 @@ export function DashboardUI({
             <h2 className={`text-4xl font-bold relative z-10 ${capitalVariation >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
               {formatCurrency(capitalVariation)}
             </h2>
-            <div className={`mt-4 px-4 py-2 rounded-full font-bold relative z-10 ${capitalVariation >= 0 ? "bg-emerald-500/10 text-emerald-400" : "bg-rose-500/10 text-rose-400"}`}>
-              {capitalVariation >= 0 ? "+" : ""}{growthPercentage.toFixed(2)}% Crecimiento
+            <div className="mt-4 flex flex-col items-center gap-1.5 relative z-10">
+              <div className={`px-4 py-2 rounded-full font-bold ${capitalVariation >= 0 ? "bg-emerald-500/10 text-emerald-400" : "bg-rose-500/10 text-rose-400"}`}>
+                {capitalVariation >= 0 ? "+" : ""}{growthPercentage.toFixed(2)}% Crecimiento Total
+              </div>
+              <div className={`text-sm font-semibold ${capitalVariation >= 0 ? "text-emerald-500" : "text-rose-500"}`}>
+                {capitalVariation >= 0 ? "+" : ""}{monthlyGrowth.toFixed(2)}% Crecimiento Mensual
+              </div>
             </div>
             <p className="text-sm text-zinc-500 mt-4 max-w-[80%] relative z-10">
               Crecimiento de la empresa comparado con el capital del último cierre mensual.
