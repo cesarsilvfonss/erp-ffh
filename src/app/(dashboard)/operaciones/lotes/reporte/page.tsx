@@ -144,8 +144,9 @@ export default async function LotReportPage({ searchParams }: { searchParams: Pr
 
       batchAny.inventoryLots.forEach((lot: any) => {
         // Stock actual
-        totalStockKg += lot.currentStock;
-        totalStockValue += (lot.currentStock * lot.unitCost);
+        const effectiveStock = lot.currentStock < 0.2 ? 0 : lot.currentStock;
+        totalStockKg += effectiveStock;
+        totalStockValue += (effectiveStock * lot.unitCost);
 
         // Ventas
         lot.saleDetails.forEach((sd: any) => {
