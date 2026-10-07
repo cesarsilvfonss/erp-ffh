@@ -1,8 +1,8 @@
 "use client";
 
-import { toggleUserStatus, unlockUser } from "@/actions/users";
+import { toggleUserStatus, unlockUser, resetPassword } from "@/actions/users";
 import { format } from "date-fns";
-import { CheckCircle2, XCircle, Shield, ShieldAlert, User as UserIcon, Lock } from "lucide-react";
+import { CheckCircle2, XCircle, Shield, ShieldAlert, User as UserIcon, Lock, KeyRound } from "lucide-react";
 
 export function UserList({ initialUsers, currentUserId, currentUserRole }: { initialUsers: any[], currentUserId: string, currentUserRole: string }) {
   async function handleToggleStatus(id: string, currentStatus: boolean) {
@@ -14,6 +14,13 @@ export function UserList({ initialUsers, currentUserId, currentUserRole }: { ini
   async function handleUnlock(id: string) {
     if (confirm("¿Estás seguro de que deseas desbloquear este usuario?")) {
       await unlockUser(id);
+    }
+  }
+
+  async function handleResetPassword(id: string) {
+    if (confirm("¿Estás seguro de restablecer la contraseña de este usuario a '123456'? El usuario deberá cambiarla al iniciar sesión.")) {
+      await resetPassword(id);
+      alert("Contraseña restablecida exitosamente a '123456'.");
     }
   }
 
@@ -87,6 +94,15 @@ export function UserList({ initialUsers, currentUserId, currentUserRole }: { ini
                           className="text-xs font-medium px-3 py-1.5 rounded-lg transition-colors bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 flex items-center gap-1"
                         >
                           <Lock className="w-3 h-3" /> Desbloquear
+                        </button>
+                      )}
+                      {isAdmin && (
+                        <button
+                          onClick={() => handleResetPassword(user.id)}
+                          className="text-xs font-medium px-3 py-1.5 rounded-lg transition-colors bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 flex items-center gap-1"
+                          title="Restablecer contraseña a 123456"
+                        >
+                          <KeyRound className="w-3 h-3" /> Restablecer
                         </button>
                       )}
                       <button

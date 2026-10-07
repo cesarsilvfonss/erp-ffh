@@ -60,7 +60,8 @@ export const authOptions: AuthOptions = {
           id: user.id,
           name: user.name,
           email: user.email,
-          role: user.role
+          role: user.role,
+          mustChangePassword: user.mustChangePassword
         };
       }
     })
@@ -70,6 +71,7 @@ export const authOptions: AuthOptions = {
       if (user) {
         token.id = user.id;
         token.role = user.role;
+        token.mustChangePassword = (user as any).mustChangePassword;
       }
       return token;
     },
@@ -77,6 +79,7 @@ export const authOptions: AuthOptions = {
       if (token && session.user) {
         session.user.id = token.id as string;
         session.user.role = token.role as string;
+        (session.user as any).mustChangePassword = token.mustChangePassword;
       }
       return session;
     }

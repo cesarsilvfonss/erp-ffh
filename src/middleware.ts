@@ -8,6 +8,11 @@ export default withAuth(
     
     if (!token) return NextResponse.next();
 
+    // FORCE PASSWORD CHANGE
+    if (token.mustChangePassword && path !== "/cambiar-contrasena" && !path.startsWith("/api/")) {
+      return NextResponse.redirect(new URL("/cambiar-contrasena", req.url));
+    }
+
     const role = token.role as string;
 
     // ADMIN has full access

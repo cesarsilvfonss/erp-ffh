@@ -81,7 +81,10 @@ export async function changePassword(currentPass: string, newPass: string) {
     
     await prisma.user.update({
       where: { id: user.id },
-      data: { password: hashedNew }
+      data: { 
+        password: hashedNew,
+        mustChangePassword: false
+      }
     });
 
     return { success: true };
@@ -104,6 +107,31 @@ export async function unlockUser(id: string) {
     data: {
       isLocked: false,
       failedLoginAttempts: 0
+    }
+  });
+
+  revalidatePath("/operaciones/usuarios");
+  return { success: true };
+}
+
+export async function resetPassword(id: string) {
+  const session = await getServerSession(authOptions);
+  if (!session || (session.user.role !== "ADMIN" && session.user.role !== "ADMINISTRATION")) {
+    throw new Error("No autorizado");
+  }
+
+  const user = await prisma.user.findUnique({ where: { id } });
+  if (!user) throw new Error("Usuario no encontrado");
+
+  const hashedNew = await bcrypt.hash("123456", 10);
+
+  await prisma.user.update({
+    where: { id },
+    data: {
+      password: hashedNew,
+      mustChangePassword: true,
+      failedLoginAttempts: 0,
+      isLocked: false
     }
   });
 
