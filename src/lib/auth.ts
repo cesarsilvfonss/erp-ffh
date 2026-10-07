@@ -17,13 +17,15 @@ export const authOptions: AuthOptions = {
         }
 
         const user = await prisma.user.findUnique({
-          where: {
-            email: credentials.email
-          }
+          where: { email: credentials.email }
         });
 
         if (!user) {
           throw new Error("Usuario no encontrado");
+        }
+
+        if (user.isLocked) {
+          throw new Error("Cuenta bloqueada por múltiples intentos fallidos. Contacte al administrador.");
         }
 
         const isPasswordValid = await bcrypt.compare(
@@ -32,7 +34,26 @@ export const authOptions: AuthOptions = {
         );
 
         if (!isPasswordValid) {
-          throw new Error("Contraseña incorrecta");
+          const newAttempts = user.failedLoginAttempts + 1;
+          if (newAttempts >= 3) {
+            await prisma.user.update({
+              where: { id: user.id },
+              data: { isLocked: true, failedLoginAttempts: newAttempts }
+            });
+            throw new Error("Cuenta bloqueada por múltiples intentos fallidos. Contacte al administrador.");
+          }
+          await prisma.user.update({
+            where: { id: user.id },
+            data: { failedLoginAttempts: newAttempts }
+          });
+          throw new Error(`Contraseña incorrecta. Intentos fallidos: ${newAttempts}/3`);
+        }
+
+        if (user.failedLoginAttempts > 0) {
+          await prisma.user.update({
+            where: { id: user.id },
+            data: { failedLoginAttempts: 0 }
+          });
         }
 
         return {

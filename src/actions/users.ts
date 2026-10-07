@@ -89,3 +89,24 @@ export async function changePassword(currentPass: string, newPass: string) {
     return { success: false, error: error.message };
   }
 }
+
+export async function unlockUser(id: string) {
+  const session = await getServerSession(authOptions);
+  if (!session || (session.user.role !== "ADMIN" && session.user.role !== "ADMINISTRATION")) {
+    throw new Error("No autorizado");
+  }
+
+  const user = await prisma.user.findUnique({ where: { id } });
+  if (!user) throw new Error("Usuario no encontrado");
+
+  await prisma.user.update({
+    where: { id },
+    data: {
+      isLocked: false,
+      failedLoginAttempts: 0
+    }
+  });
+
+  revalidatePath("/operaciones/usuarios");
+  return { success: true };
+}

@@ -1,13 +1,19 @@
 "use client";
 
-import { toggleUserStatus } from "@/actions/users";
+import { toggleUserStatus, unlockUser } from "@/actions/users";
 import { format } from "date-fns";
-import { CheckCircle2, XCircle, Shield, ShieldAlert, User as UserIcon } from "lucide-react";
+import { CheckCircle2, XCircle, Shield, ShieldAlert, User as UserIcon, Lock } from "lucide-react";
 
-export function UserList({ initialUsers, currentUserId }: { initialUsers: any[], currentUserId: string }) {
+export function UserList({ initialUsers, currentUserId, currentUserRole }: { initialUsers: any[], currentUserId: string, currentUserRole: string }) {
   async function handleToggleStatus(id: string, currentStatus: boolean) {
     if (confirm(`¿Estás seguro de que deseas ${currentStatus ? 'desactivar' : 'activar'} este usuario?`)) {
       await toggleUserStatus(id, currentStatus);
+    }
+  }
+
+  async function handleUnlock(id: string) {
+    if (confirm("¿Estás seguro de que deseas desbloquear este usuario?")) {
+      await unlockUser(id);
     }
   }
 
@@ -16,6 +22,8 @@ export function UserList({ initialUsers, currentUserId }: { initialUsers: any[],
     ADMINISTRATION: { icon: Shield, color: "text-blue-400 bg-blue-400/10 border-blue-400/20", label: "Administración" },
     WEIGHER: { icon: UserIcon, color: "text-zinc-400 bg-zinc-400/10 border-zinc-400/20", label: "Pesador" }
   };
+
+  const isAdmin = currentUserRole === "ADMIN" || currentUserRole === "ADMINISTRATION";
 
   return (
     <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl overflow-hidden">
@@ -51,33 +59,50 @@ export function UserList({ initialUsers, currentUserId }: { initialUsers: any[],
                     </div>
                   </td>
                   <td className="px-6 py-4">
-                    {user.status ? (
-                      <div className="flex items-center gap-1.5 text-emerald-400 text-xs font-medium">
-                        <CheckCircle2 className="w-4 h-4" /> Activo
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-1.5 text-zinc-500 text-xs font-medium">
-                        <XCircle className="w-4 h-4" /> Inactivo
-                      </div>
-                    )}
+                    <div className="flex flex-col gap-1">
+                      {user.status ? (
+                        <div className="flex items-center gap-1.5 text-emerald-400 text-xs font-medium">
+                          <CheckCircle2 className="w-4 h-4" /> Activo
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1.5 text-zinc-500 text-xs font-medium">
+                          <XCircle className="w-4 h-4" /> Inactivo
+                        </div>
+                      )}
+                      {user.isLocked && (
+                        <div className="flex items-center gap-1.5 text-rose-500 text-xs font-medium">
+                          <Lock className="w-4 h-4" /> Bloqueado
+                        </div>
+                      )}
+                    </div>
                   </td>
                   <td className="px-6 py-4 text-zinc-400">
                     {format(new Date(user.createdAt), "dd/MM/yyyy HH:mm")}
                   </td>
                   <td className="px-6 py-4 text-right">
-                    <button
-                      onClick={() => handleToggleStatus(user.id, user.status)}
-                      disabled={isCurrentUser}
-                      className={`text-xs font-medium px-3 py-1.5 rounded-lg transition-colors ${
-                        isCurrentUser 
-                          ? "opacity-50 cursor-not-allowed bg-zinc-800 text-zinc-500"
-                          : user.status 
-                            ? "bg-rose-500/10 text-rose-400 hover:bg-rose-500/20" 
-                            : "bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20"
-                      }`}
-                    >
-                      {user.status ? "Desactivar" : "Activar"}
-                    </button>
+                    <div className="flex justify-end gap-2">
+                      {user.isLocked && isAdmin && (
+                        <button
+                          onClick={() => handleUnlock(user.id)}
+                          className="text-xs font-medium px-3 py-1.5 rounded-lg transition-colors bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 flex items-center gap-1"
+                        >
+                          <Lock className="w-3 h-3" /> Desbloquear
+                        </button>
+                      )}
+                      <button
+                        onClick={() => handleToggleStatus(user.id, user.status)}
+                        disabled={isCurrentUser}
+                        className={`text-xs font-medium px-3 py-1.5 rounded-lg transition-colors ${
+                          isCurrentUser 
+                            ? "opacity-50 cursor-not-allowed bg-zinc-800 text-zinc-500"
+                            : user.status 
+                              ? "bg-rose-500/10 text-rose-400 hover:bg-rose-500/20" 
+                              : "bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20"
+                        }`}
+                      >
+                        {user.status ? "Desactivar" : "Activar"}
+                      </button>
+                    </div>
                   </td>
                 </tr>
               );

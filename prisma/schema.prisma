@@ -21,14 +21,16 @@ enum RoleEnum {
 
 
 model User {
-  id        String   @id @default(cuid())
-  name      String
-  email     String   @unique
-  password  String
-  role      RoleEnum @default(WEIGHER)
-  status    Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                  String   @id @default(cuid())
+  name                String
+  email               String   @unique
+  password            String
+  role                RoleEnum @default(WEIGHER)
+  status              Boolean  @default(true)
+  failedLoginAttempts Int      @default(0)
+  isLocked            Boolean  @default(false)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
 
   auditLogs       AuditLog[]
   transactions    Transaction[]

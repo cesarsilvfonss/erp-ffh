@@ -33,7 +33,7 @@ export default async function UsuariosPage() {
         <UserForm />
       </div>
 
-      <UserList initialUsers={users} currentUserId={session.user.id} />
+      <UserList initialUsers={users} currentUserId={session.user.id} currentUserRole={session.user.role} />
     </div>
   );
 }
