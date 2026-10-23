@@ -6,6 +6,8 @@ import { CapitalAnalysisClient } from "./CapitalAnalysisClient";
 import { getLiveCapital } from "@/actions/closure";
 import { getOpenPeriod } from "@/lib/closure";
 import { todayPY } from "@/lib/dates";
+import { computeDistribution } from "@/lib/shareholders";
+import { loadDistributionInputs } from "@/lib/distribution";
 
 export const dynamic = "force-dynamic";
 
@@ -42,14 +44,27 @@ export default async function PeriodClosurePage({
       closedByName: selected.closedBy?.name || null,
     };
   } else {
-    const live = await getLiveCapital();
+    const [live, inputs] = await Promise.all([getLiveCapital(), loadDistributionInputs()]);
+    const dist = computeDistribution(inputs.shareholders, inputs.participants, live.totalCapital - openPeriod.previousCapital);
     data = {
       status: "OPEN",
       ...live,
       periodStart: openPeriod.start.toISOString(),
       previousCapital: openPeriod.previousCapital,
+      grossIncome: dist.grossIncome,
+      participantEstimates: dist.participants.map(p => ({
+        name: p.name,
+        profitShare: p.profitShare,
+        amount: p.amount,
+        salary: p.salary,
+        retained: p.retained,
+      })),
+      participantsTotal: dist.participantsTotal,
+      totalSalary: dist.totalSalary,
     };
   }
+
+  const banks = await prisma.bankAccount.findMany({ where: { status: true }, orderBy: { bankName: "asc" } });
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -64,6 +79,7 @@ export default async function PeriodClosurePage({
         isLatestClosure={!!selected && closures[0]?.id === selected.id}
         today={todayPY()}
         userRole={session.user.role}
+        banks={banks.map(b => ({ id: b.id, label: `${b.bankName} - ${b.accountName} (${b.accountNumber})` }))}
       />
     </div>
   );

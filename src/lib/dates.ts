@@ -24,8 +24,9 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 
 /** Fecha de inicio del primer ejercicio (capital inicial). */
 export const INITIAL_PERIOD_START_YMD = "2026-07-26";
-/** Capital inicial del sistema al inicio del primer ejercicio. */
-export const INITIAL_CAPITAL = 3124115358;
+/** Capital inicial del sistema al inicio del primer ejercicio (solo accionistas: CSDF + MH).
+ *  Antes era 3.124.115.358; los 13.957.842 de YL son una retención (deuda), no capital. */
+export const INITIAL_CAPITAL = 3110157516;
 
 /** Devuelve el día calendario ("YYYY-MM-DD") en Asunción de un instante dado. */
 export function toYmdPY(date: Date | string | number): string {

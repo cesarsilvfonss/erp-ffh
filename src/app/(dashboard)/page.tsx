@@ -5,6 +5,7 @@ import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { getOpenPeriod } from "@/lib/closure";
 import { todayPY } from "@/lib/dates";
+import { getTotalRetentionBalance } from "@/lib/distribution";
 
 export const dynamic = "force-dynamic";
 
@@ -104,6 +105,9 @@ export default async function DashboardPage() {
     }
   });
   const liveStockValue = liveStockClosures.reduce((acc, closure) => acc + closure.totalValue, 0);
+
+  // 4.2 Retención de participantes (ej. YL): deuda, no es capital
+  const retentionBalance = await getTotalRetentionBalance();
 
   // 6. Ranking de Rendimiento por Proveedor
   const rankingSlaughters = await prisma.slaughter.findMany({
@@ -272,6 +276,7 @@ export default async function DashboardPage() {
       walletChecks={walletChecks}
       receivables={receivables}
       payables={payables}
+      retentionBalance={retentionBalance}
       previousCapital={previousCapital}
       providerRanking={providerRanking}
       categoryHeaders={categoryHeaders}

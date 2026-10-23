@@ -14,16 +14,20 @@ export function CapitalAnalysisClient({
   isLatestClosure,
   today,
   userRole,
+  banks = [],
 }: {
   data: any;
   closures: ClosureSummary[];
   isLatestClosure: boolean;
   today: string;
   userRole: string;
+  banks?: { id: string; label: string }[];
 }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [bankAccountId, setBankAccountId] = useState("");
 
   const formatCurrency = (val: number) => 
     new Intl.NumberFormat('es-PY', { style: 'currency', currency: 'PYG', maximumFractionDigits: 0 }).format(val);
@@ -36,9 +40,14 @@ export function CapitalAnalysisClient({
   const periodFrom = formatDatePY(data.periodStart);
   const periodTo = isClosed ? formatDatePY(data.periodEnd) : todayLabel;
 
+  // En vivo se descuenta la participación estimada (ej. YL) para mostrar el capital que quedará al cerrar.
+  const participantsTotal: number = isOpen ? data.participantsTotal || 0 : 0;
+  const totalSalary: number = isOpen ? data.totalSalary || 0 : 0;
+  const displayTotal = data.totalCapital - participantsTotal;
+
   // Variación vs capital del cierre anterior (o capital inicial)
   const prevCapital = data.previousCapital || 0;
-  const variation = data.totalCapital - prevCapital;
+  const variation = displayTotal - prevCapital;
   const variationPercent = prevCapital !== 0 ? (variation / prevCapital) * 100 : 0;
 
   function handleSelect(e: React.ChangeEvent<HTMLSelectElement>) {
@@ -47,11 +56,11 @@ export function CapitalAnalysisClient({
   }
 
   async function handleClose() {
-    if (!confirm(`¿Cerrar definitivamente el período ${periodFrom} 00:00:00 al ${todayLabel} 23:59:59?\n\nNingún registro con fecha hasta el ${todayLabel} podrá ser alterado o ingresado. El nuevo período comenzará el día siguiente a las 00:00:00.`)) return;
     setLoading(true);
     setError("");
-    const res = await closePeriod();
+    const res = await closePeriod({ bankAccountId: bankAccountId || null });
     setLoading(false);
+    setConfirmOpen(false);
     if (res.success) router.refresh();
     else setError(res.error || "Error al cerrar el período");
   }
@@ -134,7 +143,7 @@ export function CapitalAnalysisClient({
 
         {isOpen && !alreadyClosedToday && (
           <button 
-            onClick={handleClose}
+            onClick={() => setConfirmOpen(true)}
             disabled={loading}
             className="flex items-center gap-2 bg-rose-600 hover:bg-rose-700 text-white px-6 py-3 rounded-lg font-bold transition-colors shadow-lg shadow-rose-900/20 disabled:opacity-50"
           >
@@ -198,19 +207,102 @@ export function CapitalAnalysisClient({
                 {formatCurrency(data.liveStockValue || 0)}
               </td>
             </tr>
+            <tr><td colSpan={2} className="h-6"></td></tr>
+            <tr className="hover:bg-zinc-800/20 transition-colors">
+              <td className="px-6 py-4 font-semibold text-zinc-300 uppercase">
+                Retención Participantes
+                <p className="text-xs font-normal normal-case text-zinc-500">Deuda acumulada con participantes (ej. YL){isClosed ? " al cierre" : ""}</p>
+              </td>
+              <td className="px-6 py-4 text-right text-rose-400 font-medium border-l border-zinc-800/50">
+                - {formatCurrency(data.retentionBalance || 0)}
+              </td>
+            </tr>
+            {isOpen && (data.participantEstimates || []).map((p: any) => (
+              <tr key={p.name} className="hover:bg-zinc-800/20 transition-colors">
+                <td className="px-6 py-4 font-semibold text-zinc-300 uppercase">
+                  Participación {p.name} estimada ({p.profitShare.toFixed(2)}%)
+                  <p className="text-xs font-normal normal-case text-zinc-500">
+                    {data.grossIncome > 0
+                      ? `Sobre utilidad bruta ${formatCurrency(data.grossIncome)}: salario ${formatCurrency(p.salary)} + retención ${formatCurrency(p.retained)}. Se liquida al cerrar.`
+                      : "Sin utilidad en el período: no corresponde participación."}
+                  </p>
+                </td>
+                <td className="px-6 py-4 text-right text-cyan-400 font-medium border-l border-zinc-800/50">
+                  - {formatCurrency(p.amount)}
+                </td>
+              </tr>
+            ))}
+            {isClosed && (data.participantShare || 0) > 0 && (
+              <tr>
+                <td colSpan={2} className="px-6 py-3 text-xs text-zinc-500">
+                  Utilidad bruta del período {formatCurrency(data.netIncome)} · Participación liquidada {formatCurrency(data.participantShare)} (salario{" "}
+                  {formatCurrency(data.participantSalary)} incluido en proveedores o ya pagado; retención incluida en la línea de retención).
+                </td>
+              </tr>
+            )}
           </tbody>
           <tfoot>
             <tr className="bg-zinc-950 border-t-2 border-zinc-700">
               <td className="px-6 py-6 font-bold text-xl uppercase text-zinc-100">
-                Total Capital
+                Total Capital{isOpen && participantsTotal > 0 ? " (neto de participación)" : ""}
               </td>
               <td className="px-6 py-6 text-right text-emerald-400 font-bold text-2xl border-l border-zinc-700">
-                {formatCurrency(data.totalCapital)}
+                {formatCurrency(displayTotal)}
               </td>
             </tr>
           </tfoot>
         </table>
       </div>
+
+      {confirmOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-zinc-950 border border-zinc-800 rounded-2xl w-full max-w-lg shadow-2xl">
+            <div className="p-6 border-b border-zinc-800">
+              <h2 className="text-xl font-semibold text-zinc-100">Cerrar período</h2>
+              <p className="text-sm text-zinc-400 mt-1">
+                Del {periodFrom} 00:00:00 al {todayLabel} 23:59:59. Ningún registro con fecha hasta el {todayLabel} podrá ser alterado o ingresado.
+              </p>
+            </div>
+            <div className="p-6 space-y-4 text-sm">
+              <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-3 space-y-1">
+                <div className="flex justify-between"><span className="text-zinc-400">Utilidad bruta</span><span className="text-zinc-100 font-semibold">{formatCurrency(data.grossIncome || 0)}</span></div>
+                <div className="flex justify-between"><span className="text-zinc-400">Participación (salario + retención)</span><span className="text-cyan-400 font-semibold">- {formatCurrency(participantsTotal)}</span></div>
+                <div className="flex justify-between"><span className="text-zinc-400">Capital al cierre</span><span className="text-emerald-400 font-bold">{formatCurrency(displayTotal)}</span></div>
+              </div>
+              {totalSalary > 0 ? (
+                <div>
+                  <label className="block text-sm font-medium text-zinc-400 mb-1.5">
+                    Pagar salario de participantes ({formatCurrency(totalSalary)}) con fecha {todayLabel} desde:
+                  </label>
+                  <select
+                    value={bankAccountId}
+                    onChange={e => setBankAccountId(e.target.value)}
+                    className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-4 py-2.5 text-zinc-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                  >
+                    <option value="">No pagar ahora (queda pendiente en Cuentas por Pagar)</option>
+                    {banks.map(b => <option key={b.id} value={b.id}>{b.label}</option>)}
+                  </select>
+                </div>
+              ) : (
+                <p className="text-xs text-zinc-500">No hay salario de participantes a liquidar en este período.</p>
+              )}
+            </div>
+            <div className="p-6 pt-0 flex gap-3 justify-end">
+              <button onClick={() => setConfirmOpen(false)} disabled={loading} className="px-4 py-2 text-zinc-300 hover:bg-zinc-800 rounded-lg font-medium transition-colors">
+                Cancelar
+              </button>
+              <button
+                onClick={handleClose}
+                disabled={loading}
+                className="flex items-center gap-2 bg-rose-600 hover:bg-rose-700 text-white px-6 py-2 rounded-lg font-bold transition-colors disabled:opacity-50"
+              >
+                <Lock className="w-4 h-4" />
+                {loading ? "Cerrando..." : "Confirmar cierre"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

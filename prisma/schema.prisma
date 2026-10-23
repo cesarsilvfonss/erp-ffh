@@ -85,6 +85,7 @@ model Provider {
   expenses                Expense[]
   accountsPayable         AccountPayable[]
   loans                   Loan[]
+  shareholders            Shareholder[]
 }
 
 model Client {
@@ -562,25 +563,89 @@ model MonthlyClosure {
   supplierBalance   Float
   stockValue        Float
   liveStockValue    Float     @default(0)
-  totalCapital      Float
+  totalCapital      Float     // Capital neto (ya descontada la participación del período y la retención)
   previousCapital   Float     @default(0)
+
+  // Distribución de utilidades
+  netIncome          Float    @default(0) // Utilidad BRUTA del período (antes de participaciones)
+  participantShare   Float    @default(0) // Total participación de participantes (salario + retención)
+  participantSalary  Float    @default(0) // Parte pagada como salario (gasto)
+  retentionBalance   Float    @default(0) // Saldo de retenciones de participantes al cierre (deuda)
+
+  shareholderHistory ShareholderCapitalHistory[]
+  retentionMovements RetentionMovement[]
 }
 
 // ========================================
-// 8. Accionistas
+// 8. Accionistas y Participantes
 // ========================================
 
-// initialCapital = capital del accionista al inicio del período abierto.
-// El % de participación se calcula como initialCapital / suma de todos los activos.
+// type = SHAREHOLDER (accionista, ej. CSDF / MH):
+//   - initialCapital = capital al inicio del período abierto.
+//   - La suma de initialCapital de los accionistas activos debe coincidir con el capital del último cierre.
+//   - Recibe la utilidad restante (después de participantes) proporcional a su capital; se capitaliza 100%.
+// type = PARTICIPANT (participante, ej. YL — no es accionista):
+//   - Recibe fixedProfitShare % de la utilidad bruta (solo si hay utilidad).
+//   - capitalizationRate % de su parte se RETIENE (deuda de la empresa con el participante,
+//     ver RetentionMovement); el resto es salario => gasto con fecha del día de cierre.
 model Shareholder {
-  id             String   @id @default(cuid())
-  name           String
-  document       String?  // CI / RUC
-  phone          String?
-  email          String?
-  notes          String?
-  initialCapital Float    @default(0)
-  isActive       Boolean  @default(true)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id                 String   @id @default(cuid())
+  type               String   @default("SHAREHOLDER") // SHAREHOLDER | PARTICIPANT
+  name               String
+  document           String?  // CI / RUC
+  phone              String?
+  email              String?
+  notes              String?
+  initialCapital     Float    @default(0) // Solo accionistas
+  fixedProfitShare   Float?   // Solo participantes: % sobre la utilidad bruta
+  capitalizationRate Float    @default(100) // Solo participantes: % de su parte que se retiene
+  providerId         String?  // Proveedor usado para registrar su salario como gasto
+  provider           Provider? @relation(fields: [providerId], references: [id])
+  isActive           Boolean  @default(true)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  history            ShareholderCapitalHistory[]
+  retentionMovements RetentionMovement[]
+}
+
+// Evolución en cada cierre. Para participantes initialCapital/finalCapital son el saldo de su retención.
+model ShareholderCapitalHistory {
+  id               String         @id @default(cuid())
+  shareholderId    String
+  shareholder      Shareholder    @relation(fields: [shareholderId], references: [id])
+  closureId        String
+  closure          MonthlyClosure @relation(fields: [closureId], references: [id])
+
+  initialCapital   Float  // Capital (o retención) al inicio del período
+  participation    Float  // % de participación en el capital de accionistas
+  profitShare      Float  // % de la utilidad bruta que le corresponde
+  profitAmount     Float  // Utilidad asignada
+  capitalizedAmount Float // Accionista: integrado al capital. Participante: retenido
+  withdrawalAmount Float  // Participante: salario (gasto)
+  finalCapital     Float  // initialCapital + capitalizedAmount
+
+  expenseId        String? // Gasto generado por el salario
+  payableId        String? // Cuenta por pagar generada por el salario
+  transactionId    String? // Pago bancario registrado en el mismo cierre (opcional)
+
+  createdAt        DateTime @default(now())
+
+  @@unique([shareholderId, closureId])
+}
+
+// Movimientos de la retención de un participante (deuda de la empresa con él).
+// Saldo = suma de amount. INITIAL (+), CLOSURE (+ retención del período), PAYMENT (− pago por banco).
+model RetentionMovement {
+  id            String          @id @default(cuid())
+  shareholderId String
+  shareholder   Shareholder     @relation(fields: [shareholderId], references: [id])
+  date          DateTime
+  type          String          // INITIAL | CLOSURE | PAYMENT | ADJUSTMENT
+  amount        Float           // + aumenta la deuda, − la disminuye
+  concept       String
+  closureId     String?
+  closure       MonthlyClosure? @relation(fields: [closureId], references: [id])
+  transactionId String?         // Transacción bancaria del pago
+  createdAt     DateTime        @default(now())
 }

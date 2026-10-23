@@ -15,6 +15,7 @@ export function DashboardUI({
   walletChecks,
   receivables,
   payables,
+  retentionBalance = 0,
   previousCapital = 0,
   lastClosureDate = null,
   providerRanking = [],
@@ -34,6 +35,7 @@ export function DashboardUI({
   walletChecks: number;
   receivables: number;
   payables: number;
+  retentionBalance?: number;
   previousCapital?: number;
   lastClosureDate?: Date | null;
   providerRanking?: any[];
@@ -60,7 +62,7 @@ export function DashboardUI({
     { label: "Cuentas por Pagar", value: formatCurrency(payables), icon: Users, trend: "Deudas", trendColor: "text-amber-400", href: "/operaciones/finanzas/cuentas-pagar" },
   ];
 
-  const currentTotalCapital = bankBalance + walletChecks + receivables + inventoryValue + liveStockValue - payables;
+  const currentTotalCapital = bankBalance + walletChecks + receivables + inventoryValue + liveStockValue - payables - retentionBalance;
   const capitalVariation = currentTotalCapital - previousCapital;
   const growthPercentage = previousCapital > 0 ? (capitalVariation / previousCapital) * 100 : 0;
   
@@ -209,6 +211,10 @@ export function DashboardUI({
                 <div className="flex justify-between items-center border-b border-zinc-800 pb-3">
                   <span className="text-zinc-400 font-medium">Saldo de Proveedores</span>
                   <span className="text-rose-400 font-bold">-{formatCurrency(payables)}</span>
+                </div>
+                <div className="flex justify-between items-center border-b border-zinc-800 pb-3">
+                  <span className="text-zinc-400 font-medium">Retención Participantes</span>
+                  <span className="text-rose-400 font-bold">-{formatCurrency(retentionBalance)}</span>
                 </div>
                 <div className="flex justify-between items-center border-b border-zinc-800 pb-3 bg-zinc-900/50 p-2 rounded-lg">
                   <span className="text-zinc-200 font-bold">Total del Capital Actual</span>
