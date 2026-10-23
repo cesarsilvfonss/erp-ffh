@@ -565,3 +565,22 @@ model MonthlyClosure {
   totalCapital      Float
   previousCapital   Float     @default(0)
 }
+
+// ========================================
+// 8. Accionistas
+// ========================================
+
+// initialCapital = capital del accionista al inicio del período abierto.
+// El % de participación se calcula como initialCapital / suma de todos los activos.
+model Shareholder {
+  id             String   @id @default(cuid())
+  name           String
+  document       String?  // CI / RUC
+  phone          String?
+  email          String?
+  notes          String?
+  initialCapital Float    @default(0)
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}

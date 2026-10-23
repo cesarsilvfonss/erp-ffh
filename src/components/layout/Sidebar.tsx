@@ -47,6 +47,7 @@ const menuCategories = [
       { icon: CircleDollarSign, label: "Cartera Cheques", href: "/operaciones/finanzas/cheques", roles: ["ADMIN", "ADMINISTRATION"] },
       { icon: Landmark, label: "Préstamos", href: "/operaciones/finanzas/prestamos", roles: ["ADMIN"] },
       { icon: Lock, label: "Cierre de Período", href: "/operaciones/finanzas/cierre-mensual", roles: ["ADMIN"] },
+      { icon: Users, label: "Accionistas", href: "/operaciones/finanzas/accionistas", roles: ["ADMIN"] },
     ]
   },
   {

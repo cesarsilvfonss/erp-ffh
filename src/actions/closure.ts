@@ -103,7 +103,7 @@ export async function getLiveCapital() {
   const liveStockClosures = await prisma.batchClosure.findMany({
     where: {
       batch: {
-        inventoryLots: { none: {} },
+        inventoryLots: { none: { unitCost: { gt: 0 } } }, // sin carne valorizada en cámara (las menudencias tienen costo 0)
         isLiveSale: false
       }
     }
