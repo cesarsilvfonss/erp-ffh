@@ -1,5 +1,6 @@
 "use client";
 
+import { todayPY } from "@/lib/dates";
 import { useState } from "react";
 import { X, AlertCircle } from "lucide-react";
 import { processBulkPayablePayment } from "@/actions/finance";
@@ -19,7 +20,7 @@ export function BulkPayablePaymentModal({
 }) {
   const [method, setMethod] = useState("TRANSFER");
   const [bankAccountId, setBankAccountId] = useState(banks[0]?.id || "");
-  const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
+  const [date, setDate] = useState(todayPY());
   const [reference, setReference] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -91,7 +92,7 @@ export function BulkPayablePaymentModal({
             <div className="space-y-2">
               <label className="text-sm font-medium text-zinc-300">Fecha de Pago</label>
               <input 
-                type="date" max={new Date().toISOString().split("T")[0]}
+                type="date" max={todayPY()}
                 required
                 value={date}
                 onChange={(e) => setDate(e.target.value)}

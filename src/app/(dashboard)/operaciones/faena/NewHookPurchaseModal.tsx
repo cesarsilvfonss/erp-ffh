@@ -1,5 +1,6 @@
 "use client";
 
+import { todayPY } from "@/lib/dates";
 import { useState } from "react";
 import { X, Plus, AlertCircle } from "lucide-react";
 import { createHookPurchase } from "@/actions/faena";
@@ -9,7 +10,7 @@ export function NewHookPurchaseModal({ providers }: { providers: any[] }) {
   const [isOpen, setIsOpen] = useState(false);
   const [providerId, setProviderId] = useState("");
   const [slaughterhouseId, setSlaughterhouseId] = useState("");
-  const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
+  const [date, setDate] = useState(todayPY());
   const [description, setDescription] = useState("");
   
   const [loading, setLoading] = useState(false);

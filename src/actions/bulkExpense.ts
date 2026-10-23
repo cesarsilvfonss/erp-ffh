@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
+import { checkPeriodClosure } from "@/lib/closure";
 
 export async function createBulkExpenses(data: {
   batchId?: string;
@@ -14,6 +15,8 @@ export async function createBulkExpenses(data: {
   }[]
 }) {
   try {
+    await checkPeriodClosure(data.date);
+
     // Usamos transacción para asegurar que todos los gastos se guarden correctamente
     const result = await prisma.$transaction(async (tx) => {
       const createdExpenses = [];

@@ -1,5 +1,6 @@
 "use client";
 
+import { todayPY } from "@/lib/dates";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createBatch } from "@/actions/batch";
@@ -38,7 +39,7 @@ export function CreateBatchForm({ providers }: { providers: any[] }) {
           type="date" 
           name="date"
           required
-          defaultValue={new Date().toISOString().split('T')[0]}
+          defaultValue={todayPY()}
           className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-4 py-2.5 text-sm text-zinc-100 focus:outline-none focus:border-emerald-500/50 transition-all"
         />
       </div>

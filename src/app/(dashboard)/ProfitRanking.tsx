@@ -5,6 +5,7 @@ import { format, isAfter, isBefore, parseISO, startOfDay, endOfDay } from "date-
 import { DollarSign, X, ArrowUpRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
+import { startOfDayPY, endOfDayPY } from "@/lib/dates";
 
 export function ProfitRanking({ events }: { events: any[] }) {
   const [dateFilter, setDateFilter] = useState<string>("all");
@@ -17,8 +18,8 @@ export function ProfitRanking({ events }: { events: any[] }) {
     if (dateFilter === "all") return events;
     if (!startDate || !endDate) return events;
 
-    const start = startOfDay(parseISO(startDate));
-    const end = endOfDay(parseISO(endDate));
+    const start = startOfDayPY(startDate);
+    const end = endOfDayPY(endDate);
 
     return events.filter(e => {
       const d = parseISO(e.date);

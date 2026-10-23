@@ -2,6 +2,10 @@ import 'dotenv/config'
 import { PrismaClient } from '@prisma/client'
 import { PrismaPg } from '@prisma/adapter-pg'
 import { Pool } from 'pg'
+import { forceServerTimezone } from './dates'
+
+// Todo el servidor opera en horario de Asunción (UTC-3 fijo)
+forceServerTimezone()
 
 const globalForPrisma = global as unknown as { prisma: PrismaClient }
 

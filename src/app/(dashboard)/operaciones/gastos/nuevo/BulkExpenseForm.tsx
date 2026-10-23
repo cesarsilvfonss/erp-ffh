@@ -1,5 +1,6 @@
 "use client";
 
+import { todayPY } from "@/lib/dates";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Trash2, Save, ArrowLeft } from "lucide-react";
@@ -25,7 +26,7 @@ export function BulkExpenseForm({
 }) {
   const router = useRouter();
   const [batchId, setBatchId] = useState<string>("");
-  const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
+  const [date, setDate] = useState(todayPY());
   const [rows, setRows] = useState<ExpenseRow[]>([
     { id: Math.random().toString(), categoryId: "", providerId: "", description: "", amount: 0 }
   ]);

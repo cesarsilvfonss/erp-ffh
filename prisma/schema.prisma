@@ -542,11 +542,15 @@ model Loan {
   createdAt       DateTime @default(now())
 }
 
+// Cierre de período (NO por mes reloj): cada cierre cubre desde periodStart
+// (00:00:00.000 Asunción del día siguiente al cierre anterior) hasta periodEnd
+// (23:59:59.999 Asunción del día en que se presionó CERRAR).
 model MonthlyClosure {
   id              String    @id @default(cuid())
-  year            Int
-  month           Int
-  status          String    @default("DRAFT") // DRAFT o CLOSED
+  closingDate     String    // "YYYY-MM-DD" (día de cierre, hora Asunción)
+  periodStart     DateTime
+  periodEnd       DateTime
+  status          String    @default("CLOSED") // CLOSED o REOPENED
   closedAt        DateTime?
   closedById      String?
   closedBy        User?     @relation(fields: [closedById], references: [id])
@@ -559,6 +563,5 @@ model MonthlyClosure {
   stockValue        Float
   liveStockValue    Float     @default(0)
   totalCapital      Float
-
-  @@unique([year, month])
+  previousCapital   Float     @default(0)
 }

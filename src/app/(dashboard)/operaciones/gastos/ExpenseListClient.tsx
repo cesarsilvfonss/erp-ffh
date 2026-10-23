@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Search } from "lucide-react";
+import { startOfDayPY, endOfDayPY } from "@/lib/dates";
 
 export function ExpenseListClient({ expenses, categories }: { expenses: any[], categories: any[] }) {
   const [search, setSearch] = useState("");
@@ -14,13 +15,13 @@ export function ExpenseListClient({ expenses, categories }: { expenses: any[], c
     
     if (startDate) {
       const expDate = new Date(exp.date);
-      const sDate = new Date(startDate + "T00:00:00");
+      const sDate = startOfDayPY(startDate);
       if (expDate < sDate) return false;
     }
     
     if (endDate) {
       const expDate = new Date(exp.date);
-      const eDate = new Date(endDate + "T23:59:59");
+      const eDate = endOfDayPY(endDate);
       if (expDate > eDate) return false;
     }
 

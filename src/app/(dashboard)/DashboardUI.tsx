@@ -6,6 +6,7 @@ import { ProviderRanking } from "./ProviderRanking";
 import { ProfitRanking } from "./ProfitRanking";
 import { ExpenseByCategory } from "./ExpenseByCategory";
 import Link from "next/link";
+import { formatDatePY, startOfDayPY, diffDaysYmd, todayPY, INITIAL_PERIOD_START_YMD } from "@/lib/dates";
 
 export function DashboardUI({ 
   bankBalance, 
@@ -24,7 +25,8 @@ export function DashboardUI({
   monthlyPurchases = 0,
   monthlyExpenses = 0,
   expensesByCategory = [],
-  startDate
+  startYmd = INITIAL_PERIOD_START_YMD,
+  todayYmd
 }: {
   bankBalance: number;
   inventoryValue: number;
@@ -42,7 +44,8 @@ export function DashboardUI({
   monthlyPurchases?: number;
   monthlyExpenses?: number;
   expensesByCategory?: { category: string; amount: number }[];
-  startDate?: Date;
+  startYmd?: string;
+  todayYmd?: string;
 }) {
   const formatCurrency = (value: number) => {
     return value.toLocaleString("es-PY", { style: "currency", currency: "PYG", maximumFractionDigits: 0 });
@@ -61,9 +64,9 @@ export function DashboardUI({
   const capitalVariation = currentTotalCapital - previousCapital;
   const growthPercentage = previousCapital > 0 ? (capitalVariation / previousCapital) * 100 : 0;
   
-  const startD = startDate || new Date("2026-07-26T00:00:00Z");
-  const today = new Date();
-  const daysOfPeriod = Math.max(1, Math.floor((today.getTime() - startD.getTime()) / (1000 * 60 * 60 * 24)));
+  // Fechas en horario de Asunción (día calendario)
+  const todayStr = todayYmd || todayPY();
+  const daysOfPeriod = Math.max(1, diffDaysYmd(startYmd, todayStr));
   const monthlyGrowth = (growthPercentage / daysOfPeriod) * 30;
 
   return (
@@ -75,11 +78,11 @@ export function DashboardUI({
           <div className="flex flex-wrap gap-6 text-xs font-medium bg-zinc-900/80 p-3.5 rounded-lg border border-zinc-800">
             <div className="flex flex-col">
               <span className="text-zinc-500 mb-0.5">Fecha inicial del ejercicio</span>
-              <span className="text-emerald-400 font-bold">{startD.toLocaleDateString("es-PY")}</span>
+              <span className="text-emerald-400 font-bold">{formatDatePY(startOfDayPY(startYmd))}</span>
             </div>
             <div className="flex flex-col">
               <span className="text-zinc-500 mb-0.5">Fecha actual</span>
-              <span className="text-zinc-200">{today.toLocaleDateString("es-PY")}</span>
+              <span className="text-zinc-200">{formatDatePY(startOfDayPY(todayStr))}</span>
             </div>
             <div className="flex flex-col">
               <span className="text-zinc-500 mb-0.5">Días del ejercicio</span>
@@ -245,7 +248,7 @@ export function DashboardUI({
               </div>
             </div>
             <p className="text-sm text-zinc-500 mt-4 max-w-[80%] relative z-10">
-              Crecimiento de la empresa comparado con el capital del último cierre mensual.
+              Crecimiento de la empresa comparado con el capital del último cierre de período (o el capital inicial).
             </p>
           </motion.div>
 

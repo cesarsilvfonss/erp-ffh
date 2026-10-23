@@ -1,5 +1,6 @@
 "use client";
 
+import { todayPY } from "@/lib/dates";
 import { useState } from "react";
 import { X, ArrowRightLeft, AlertCircle } from "lucide-react";
 import { processInternalTransfer } from "@/actions/finance";
@@ -11,7 +12,7 @@ export function TransferModal({ banks }: { banks: any[] }) {
   const [toBankId, setToBankId] = useState("");
   const [amountFrom, setAmountFrom] = useState("");
   const [amountTo, setAmountTo] = useState("");
-  const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
+  const [date, setDate] = useState(todayPY());
   const [concept, setConcept] = useState("");
   const [reference, setReference] = useState("");
   

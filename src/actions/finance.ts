@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 
-import { checkPeriodClosure } from "@/lib/closure";
+import { checkPeriodClosure, assertNotFutureDate } from "@/lib/closure";
 
 export async function processPayment(data: {
   receivableId: string;
@@ -27,7 +27,8 @@ export async function processPayment(data: {
       return { success: false, error: "No autenticado" };
     }
 
-    await checkPeriodClosure(new Date(data.date));
+    await checkPeriodClosure(new Date(data.date + "T12:00:00Z"));
+    assertNotFutureDate(new Date(data.date + "T12:00:00Z"));
 
     return await prisma.$transaction(async (tx) => {
       const receivable = await tx.accountReceivable.findUnique({
@@ -132,7 +133,7 @@ export async function createLoan(data: {
       return { success: false, error: "No autenticado" };
     }
 
-    await checkPeriodClosure(new Date(data.date));
+    await checkPeriodClosure(new Date(data.date + "T12:00:00Z"));
 
     if (!data.providerId || !data.bankAccountId || data.quotas.length === 0) {
       throw new Error("Faltan datos requeridos para el préstamo");
@@ -257,7 +258,8 @@ export async function processPayablePayment(data: {
       return { success: false, error: "No autenticado" };
     }
 
-    await checkPeriodClosure(new Date(data.date));
+    await checkPeriodClosure(new Date(data.date + "T12:00:00Z"));
+    assertNotFutureDate(new Date(data.date + "T12:00:00Z"));
 
     return await prisma.$transaction(async (tx) => {
       const payable = await tx.accountPayable.findUnique({
@@ -333,7 +335,8 @@ export async function processBulkPayablePayment(data: {
       return { success: false, error: "No autenticado" };
     }
 
-    await checkPeriodClosure(new Date(data.date));
+    await checkPeriodClosure(new Date(data.date + "T12:00:00Z"));
+    assertNotFutureDate(new Date(data.date + "T12:00:00Z"));
 
     if (data.payableIds.length === 0) {
       throw new Error("No se han seleccionado cuentas para pagar");
@@ -437,7 +440,7 @@ export async function processInternalTransfer(data: {
       return { success: false, error: "No autenticado" };
     }
 
-    await checkPeriodClosure(new Date(data.date));
+    await checkPeriodClosure(new Date(data.date + "T12:00:00Z"));
 
     if (data.fromBankId === data.toBankId) {
       throw new Error("La cuenta de origen y destino no pueden ser la misma");

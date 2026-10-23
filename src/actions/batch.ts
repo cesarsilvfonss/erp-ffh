@@ -113,6 +113,8 @@ export async function closeBatch(batchId: string, payload: {
   prices: { itemId: string; pricePerKg: number; liquidWeight: number }[];
 }) {
   try {
+    await checkPeriodClosure(new Date());
+
     const result = await prisma.$transaction(async (tx) => {
       const batch = await tx.batch.findUnique({
         where: { id: batchId },

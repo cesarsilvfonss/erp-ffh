@@ -1,5 +1,6 @@
 "use client";
 
+import { todayPY } from "@/lib/dates";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createSale } from "@/actions/sales";
@@ -21,7 +22,7 @@ export function NewSaleForm({
   const [loading, setLoading] = useState(false);
   
   const [clientId, setClientId] = useState(clients[0]?.id || "");
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const [date, setDate] = useState(todayPY());
   const [invoiceNumber, setInvoiceNumber] = useState("");
   const [isInitialSale, setIsInitialSale] = useState(false);
   

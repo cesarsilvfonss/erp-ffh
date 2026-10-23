@@ -1,5 +1,6 @@
 "use client";
 
+import { todayPY } from "@/lib/dates";
 import { useState } from "react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -20,7 +21,7 @@ export function PayablePaymentModal({
   const [loading, setLoading] = useState(false);
   const [amount, setAmount] = useState("");
   const [method, setMethod] = useState("TRANSFER");
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const [date, setDate] = useState(todayPY());
   const [bankAccountId, setBankAccountId] = useState(banks[0]?.id || "");
   const [reference, setReference] = useState("");
 
@@ -96,7 +97,7 @@ export function PayablePaymentModal({
             <div>
               <label className="block text-sm font-medium text-zinc-400 mb-1.5">Fecha de Pago *</label>
               <input
-                type="date" max={new Date().toISOString().split("T")[0]}
+                type="date" max={todayPY()}
                 required
                 value={date}
                 onChange={e => setDate(e.target.value)}

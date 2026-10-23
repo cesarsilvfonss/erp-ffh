@@ -16,7 +16,7 @@ export async function createSale(data: {
   details: { itemId: string; inventoryLotId: string; quantityKg: number; salePrice: number }[];
 }) {
   try {
-    await checkPeriodClosure(new Date(data.date));
+    await checkPeriodClosure(new Date(data.date + "T12:00:00Z"));
 
     return await prisma.$transaction(async (tx) => {
       // 1. Validar Stock para todos los items

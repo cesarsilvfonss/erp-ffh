@@ -1,5 +1,6 @@
 "use client";
 
+import { todayPY } from "@/lib/dates";
 import { useState } from "react";
 import { X, Save, DollarSign } from "lucide-react";
 import { injectCapital } from "@/actions/banks";
@@ -15,14 +16,14 @@ export function CapitalInjectionModal({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
+  const [date, setDate] = useState(todayPY());
   const [amount, setAmount] = useState("");
   const [providerId, setProviderId] = useState("");
   const [bankAccountId, setBankAccountId] = useState("");
 
   const handleClose = () => {
     setIsOpen(false);
-    setDate(new Date().toISOString().split("T")[0]);
+    setDate(todayPY());
     setAmount("");
     setProviderId("");
     setBankAccountId("");

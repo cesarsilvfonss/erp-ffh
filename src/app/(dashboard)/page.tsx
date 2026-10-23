@@ -3,7 +3,8 @@ import { DashboardUI } from "./DashboardUI";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import { startOfMonth, endOfMonth } from "date-fns";
+import { getOpenPeriod } from "@/lib/closure";
+import { todayPY } from "@/lib/dates";
 
 export const dynamic = "force-dynamic";
 
@@ -14,17 +15,9 @@ export default async function DashboardPage() {
     redirect("/operaciones/faena");
   }
 
-  const lastClosure = await prisma.monthlyClosure.findFirst({
-    where: { status: 'CLOSED' },
-    orderBy: [
-      { year: 'desc' },
-      { month: 'desc' }
-    ]
-  });
-  
-  // El capital base inicial es 3.124.115.358 si no hay cierres anteriores.
-  const previousCapital = lastClosure ? lastClosure.totalCapital : 3124115358;
-  const start = lastClosure?.closedAt ? lastClosure.closedAt : new Date("2026-07-26T00:00:00Z");
+  // Período abierto: desde las 00:00:00 (Asunción) del día siguiente al último
+  // cierre, o desde la fecha inicial del sistema (26/07/2026) con el capital inicial.
+  const { start, previousCapital, startYmd } = await getOpenPeriod();
 
   const [
     salesResult,
@@ -288,7 +281,8 @@ export default async function DashboardPage() {
       monthlyPurchases={monthlyPurchases}
       monthlyExpenses={monthlyExpenses}
       expensesByCategory={expensesByCategory}
-      startDate={start}
+      startYmd={startYmd}
+      todayYmd={todayPY()}
     />
   );
 }

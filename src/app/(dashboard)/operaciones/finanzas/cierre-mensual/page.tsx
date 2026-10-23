@@ -4,13 +4,15 @@ import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { CapitalAnalysisClient } from "./CapitalAnalysisClient";
 import { getLiveCapital } from "@/actions/closure";
+import { getOpenPeriod } from "@/lib/closure";
+import { todayPY } from "@/lib/dates";
 
 export const dynamic = "force-dynamic";
 
-export default async function MonthlyClosurePage({ 
+export default async function PeriodClosurePage({ 
   searchParams 
 }: { 
-  searchParams: Promise<{ month?: string, year?: string }> 
+  searchParams: Promise<{ id?: string }> 
 }) {
   const session = await getServerSession(authOptions);
   
@@ -18,49 +20,50 @@ export default async function MonthlyClosurePage({
     redirect("/");
   }
 
-  const resolvedSearchParams = await searchParams;
-  const now = new Date();
-  const month = resolvedSearchParams.month ? parseInt(resolvedSearchParams.month) : now.getMonth();
-  const year = resolvedSearchParams.year ? parseInt(resolvedSearchParams.year) : now.getFullYear();
+  const { id } = await searchParams;
 
-  // Buscar si existe un cierre (DRAFT o CLOSED)
-  const closure = await prisma.monthlyClosure.findUnique({
-    where: { year_month: { year, month } }
+  const closures = await prisma.monthlyClosure.findMany({
+    where: { status: "CLOSED" },
+    orderBy: { periodEnd: "desc" },
+    include: { closedBy: { select: { name: true } } }
   });
 
-  let currentData;
-  if (closure) {
-    currentData = closure;
+  const openPeriod = await getOpenPeriod();
+  const selected = id ? closures.find(c => c.id === id) || null : null;
+
+  let data: any;
+  if (selected) {
+    data = {
+      ...selected,
+      status: "CLOSED",
+      periodStart: selected.periodStart.toISOString(),
+      periodEnd: selected.periodEnd.toISOString(),
+      closedAt: selected.closedAt?.toISOString() || null,
+      closedByName: selected.closedBy?.name || null,
+    };
   } else {
-    // Si no existe ni borrador, traemos en vivo el estado actual
     const live = await getLiveCapital();
-    currentData = {
+    data = {
       status: "OPEN",
-      ...live
+      ...live,
+      periodStart: openPeriod.start.toISOString(),
+      previousCapital: openPeriod.previousCapital,
     };
   }
-
-  // Buscar el cierre del mes INMEDIATAMENTE ANTERIOR para comparar
-  let prevMonth = month - 1;
-  let prevYear = year;
-  if (prevMonth < 0) {
-    prevMonth = 11;
-    prevYear--;
-  }
-
-  const prevClosure = await prisma.monthlyClosure.findUnique({
-    where: { year_month: { year: prevYear, month: prevMonth } }
-  });
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       <CapitalAnalysisClient 
-        data={currentData} 
-        prevData={prevClosure}
-        selectedMonth={month}
-        selectedYear={year}
+        data={data}
+        closures={closures.map(c => ({
+          id: c.id,
+          closingDate: c.closingDate,
+          periodStart: c.periodStart.toISOString(),
+          totalCapital: c.totalCapital,
+        }))}
+        isLatestClosure={!!selected && closures[0]?.id === selected.id}
+        today={todayPY()}
         userRole={session.user.role}
-        userId={session.user.id}
       />
     </div>
   );

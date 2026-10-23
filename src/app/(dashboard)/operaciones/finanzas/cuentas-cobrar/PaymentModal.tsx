@@ -1,5 +1,6 @@
 "use client";
 
+import { todayPY } from "@/lib/dates";
 import { useState, useEffect } from "react";
 import { Loader2, X, Wallet, Plus, Trash2, Building2, Calendar, FileText } from "lucide-react";
 import { processPayment } from "@/actions/finance";
@@ -32,7 +33,7 @@ export function PaymentModal({
   const [error, setError] = useState("");
   const router = useRouter();
   
-  const [date, setDate] = useState(() => new Date().toISOString().split("T")[0]);
+  const [date, setDate] = useState(() => todayPY());
   const [payments, setPayments] = useState<PaymentLine[]>([]);
 
   useEffect(() => {
@@ -48,7 +49,7 @@ export function PaymentModal({
         issueDate: "",
         dueDate: ""
       }]);
-      setDate(new Date().toISOString().split("T")[0]);
+      setDate(todayPY());
       setError("");
     }
   }, [receivable, isOpen, banks]);
@@ -197,7 +198,7 @@ export function PaymentModal({
             <div>
               <label className="block text-sm font-medium text-zinc-400 mb-1.5">Fecha de Cobro *</label>
               <input 
-                type="date" max={new Date().toISOString().split("T")[0]} 
+                type="date" max={todayPY()} 
                 name="date"
                 required
                 value={date}

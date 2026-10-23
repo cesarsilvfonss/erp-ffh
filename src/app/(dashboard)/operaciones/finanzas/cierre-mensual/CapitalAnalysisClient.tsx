@@ -2,25 +2,24 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Lock, Unlock, TrendingUp, TrendingDown, Minus, Save, RefreshCcw, AlertTriangle } from "lucide-react";
-import { format } from "date-fns";
-import { es } from "date-fns/locale";
-import { createOrUpdateClosure, reopenClosure } from "@/actions/closure";
+import { Lock, Unlock, TrendingUp, TrendingDown, Minus, RefreshCcw, AlertTriangle } from "lucide-react";
+import { closePeriod, reopenLastClosure } from "@/actions/closure";
+import { formatDatePY, startOfDayPY } from "@/lib/dates";
+
+type ClosureSummary = { id: string; closingDate: string; periodStart: string; totalCapital: number };
 
 export function CapitalAnalysisClient({
   data,
-  prevData,
-  selectedMonth,
-  selectedYear,
+  closures,
+  isLatestClosure,
+  today,
   userRole,
-  userId
 }: {
   data: any;
-  prevData: any;
-  selectedMonth: number;
-  selectedYear: number;
+  closures: ClosureSummary[];
+  isLatestClosure: boolean;
+  today: string;
   userRole: string;
-  userId: string;
 }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -29,63 +28,42 @@ export function CapitalAnalysisClient({
   const formatCurrency = (val: number) => 
     new Intl.NumberFormat('es-PY', { style: 'currency', currency: 'PYG', maximumFractionDigits: 0 }).format(val);
 
-  function handleFilterChange(e: React.ChangeEvent<HTMLSelectElement>, type: 'month' | 'year') {
-    const val = parseInt(e.target.value);
-    const m = type === 'month' ? val : selectedMonth;
-    const y = type === 'year' ? val : selectedYear;
-    router.push(`/operaciones/finanzas/cierre-mensual?month=${m}&year=${y}`);
-  }
-
-  const months = [
-    "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", 
-    "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
-  ];
-  
-  const currentYear = new Date().getFullYear();
-  const years = Array.from({length: 5}, (_, i) => currentYear - i);
-
   const isClosed = data.status === "CLOSED";
-  const isDraft = data.status === "DRAFT";
   const isOpen = data.status === "OPEN";
+  const todayLabel = formatDatePY(startOfDayPY(today));
+  const alreadyClosedToday = closures[0]?.closingDate === today;
 
-  // Calcular Variación
-  let variation = 0;
-  let variationPercent = 0;
-  if (prevData) {
-    variation = data.totalCapital - prevData.totalCapital;
-    if (prevData.totalCapital !== 0) {
-      variationPercent = (variation / prevData.totalCapital) * 100;
-    }
+  const periodFrom = formatDatePY(data.periodStart);
+  const periodTo = isClosed ? formatDatePY(data.periodEnd) : todayLabel;
+
+  // Variación vs capital del cierre anterior (o capital inicial)
+  const prevCapital = data.previousCapital || 0;
+  const variation = data.totalCapital - prevCapital;
+  const variationPercent = prevCapital !== 0 ? (variation / prevCapital) * 100 : 0;
+
+  function handleSelect(e: React.ChangeEvent<HTMLSelectElement>) {
+    const v = e.target.value;
+    router.push(v ? `/operaciones/finanzas/cierre-mensual?id=${v}` : `/operaciones/finanzas/cierre-mensual`);
   }
 
-  async function handleCloseMonth() {
-    if (!confirm(`¿Estás seguro de cerrar definitivamente ${months[selectedMonth]} ${selectedYear}? Ningún registro podrá ser alterado o ingresado para este período.`)) return;
-    
+  async function handleClose() {
+    if (!confirm(`¿Cerrar definitivamente el período ${periodFrom} 00:00:00 al ${todayLabel} 23:59:59?\n\nNingún registro con fecha hasta el ${todayLabel} podrá ser alterado o ingresado. El nuevo período comenzará el día siguiente a las 00:00:00.`)) return;
     setLoading(true);
     setError("");
-    const res = await createOrUpdateClosure(selectedYear, selectedMonth, true, userId);
+    const res = await closePeriod();
     setLoading(false);
-    
-    if (res.success) {
-      router.refresh();
-    } else {
-      setError("Error al cerrar el mes");
-    }
+    if (res.success) router.refresh();
+    else setError(res.error || "Error al cerrar el período");
   }
 
-  async function handleReopenMonth() {
-    if (!confirm(`PRECAUCIÓN: Re-abrir este mes permitirá cargar y modificar registros. Esto alterará el reporte de stock retrospectivo. ¿Estás seguro?`)) return;
-    
+  async function handleReopen() {
+    if (!confirm(`PRECAUCIÓN: Re-abrir este período permitirá cargar y modificar registros con fecha hasta el ${periodTo}. ¿Estás seguro?`)) return;
     setLoading(true);
     setError("");
-    const res = await reopenClosure(selectedYear, selectedMonth, userId);
+    const res = await reopenLastClosure();
     setLoading(false);
-    
-    if (res.success) {
-      router.refresh();
-    } else {
-      setError("Error al re-abrir el mes");
-    }
+    if (res.success) router.push(`/operaciones/finanzas/cierre-mensual`);
+    else setError(res.error || "Error al re-abrir el período");
   }
 
   return (
@@ -95,31 +73,22 @@ export function CapitalAnalysisClient({
           <h1 className="text-2xl font-bold text-zinc-100 flex items-center gap-2">
             Análisis sobre Capital
           </h1>
-          <p className="text-zinc-400 text-sm mt-1">Cierre mensual y cuadro patrimonial</p>
+          <p className="text-zinc-400 text-sm mt-1">Cierre de período y cuadro patrimonial (hora de Asunción)</p>
         </div>
         
-        <div className="flex items-center gap-3">
-          <select 
-            value={selectedMonth}
-            onChange={(e) => handleFilterChange(e, 'month')}
-            disabled={loading}
-            className="bg-zinc-950 border border-zinc-800 rounded-lg px-4 py-2 text-zinc-100 focus:border-emerald-500 focus:outline-none"
-          >
-            {months.map((m, i) => (
-              <option key={i} value={i}>{m}</option>
-            ))}
-          </select>
-          <select 
-            value={selectedYear}
-            onChange={(e) => handleFilterChange(e, 'year')}
-            disabled={loading}
-            className="bg-zinc-950 border border-zinc-800 rounded-lg px-4 py-2 text-zinc-100 focus:border-emerald-500 focus:outline-none"
-          >
-            {years.map(y => (
-              <option key={y} value={y}>{y}</option>
-            ))}
-          </select>
-        </div>
+        <select 
+          value={isClosed ? data.id : ""}
+          onChange={handleSelect}
+          disabled={loading}
+          className="bg-zinc-950 border border-zinc-800 rounded-lg px-4 py-2 text-zinc-100 focus:border-emerald-500 focus:outline-none"
+        >
+          <option value="">PERÍODO ABIERTO (EN VIVO)</option>
+          {closures.map(c => (
+            <option key={c.id} value={c.id}>
+              {formatDatePY(c.periodStart)} AL {formatDatePY(startOfDayPY(c.closingDate))}
+            </option>
+          ))}
+        </select>
       </div>
 
       {error && (
@@ -130,63 +99,64 @@ export function CapitalAnalysisClient({
       )}
 
       {/* Tarjeta de Estado */}
-      <div className={`p-4 rounded-xl border flex items-center justify-between ${
-        isClosed ? "bg-rose-500/10 border-rose-500/20 text-rose-400" : 
-        isDraft ? "bg-amber-500/10 border-amber-500/20 text-amber-400" :
-        "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
+      <div className={`p-4 rounded-xl border flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between ${
+        isClosed ? "bg-rose-500/10 border-rose-500/20 text-rose-400" : "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
       }`}>
         <div className="flex items-center gap-3">
-          {isClosed ? <Lock className="w-6 h-6" /> : isDraft ? <Save className="w-6 h-6" /> : <Unlock className="w-6 h-6" />}
+          {isClosed ? <Lock className="w-6 h-6" /> : <Unlock className="w-6 h-6" />}
           <div>
             <h3 className="font-bold text-lg">
-              {isClosed ? "MES CERRADO Y BLOQUEADO" : isDraft ? "BORRADOR AUTOMÁTICO (ABIERTO)" : "MES ABIERTO (EN VIVO)"}
+              {isClosed ? "PERÍODO CERRADO Y BLOQUEADO" : "PERÍODO ABIERTO (EN VIVO)"}
             </h3>
             <p className="text-sm opacity-80">
-              {isClosed ? `Congelado el ${format(new Date(data.closedAt), "dd/MM/yyyy HH:mm")}. No se admiten modificaciones.` : 
-               isDraft ? "Fotografía tomada automáticamente a fin de mes. Aún puedes cargar registros." : 
-               "Mostrando cálculos actuales en tiempo real."}
+              Del {periodFrom} 00:00:00 al {periodTo} {isClosed ? "23:59:59" : "(hoy)"}
+            </p>
+            <p className="text-xs opacity-70 mt-0.5">
+              {isClosed
+                ? `Cerrado el ${data.closedAt ? formatDatePY(data.closedAt, true) : "-"}${data.closedByName ? ` por ${data.closedByName}` : ""}. No se admiten modificaciones.`
+                : alreadyClosedToday
+                  ? "El día de hoy ya fue cerrado. Las operaciones nuevas deben tener fecha de mañana en adelante."
+                  : "Mostrando cálculos actuales en tiempo real."}
             </p>
           </div>
         </div>
         
-        {isClosed && userRole === "ADMIN" && (
+        {isClosed && isLatestClosure && userRole === "ADMIN" && (
           <button 
-            onClick={handleReopenMonth}
+            onClick={handleReopen}
             disabled={loading}
             className="flex items-center gap-2 bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 px-4 py-2 rounded-lg font-medium transition-colors border border-rose-500/30 disabled:opacity-50"
           >
             <RefreshCcw className="w-4 h-4" />
-            Re-Abrir Mes
+            Re-Abrir Período
           </button>
         )}
 
-        {(isOpen || isDraft) && (
+        {isOpen && !alreadyClosedToday && (
           <button 
-            onClick={handleCloseMonth}
+            onClick={handleClose}
             disabled={loading}
             className="flex items-center gap-2 bg-rose-600 hover:bg-rose-700 text-white px-6 py-3 rounded-lg font-bold transition-colors shadow-lg shadow-rose-900/20 disabled:opacity-50"
           >
             <Lock className="w-5 h-5" />
-            CERRAR MES DEFINITIVAMENTE
+            CERRAR AL {todayLabel} 23:59:59
           </button>
         )}
       </div>
 
       {/* Tabla del Reporte */}
       <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl overflow-hidden">
-        <div className="bg-zinc-950 px-6 py-4 border-b border-zinc-800 flex justify-between items-center">
+        <div className="bg-zinc-950 px-6 py-4 border-b border-zinc-800 flex flex-col sm:flex-row gap-2 justify-between sm:items-center">
           <h2 className="text-xl font-bold uppercase text-zinc-100 tracking-wide">Analisis Sobre Capital</h2>
-          {prevData && (
-            <div className="flex items-center gap-2 text-sm">
-              <span className="text-zinc-500">vs Mes Anterior:</span>
-              <span className={`flex items-center gap-1 font-bold ${
-                variation > 0 ? "text-emerald-400" : variation < 0 ? "text-rose-400" : "text-zinc-400"
-              }`}>
-                {variation > 0 ? <TrendingUp className="w-4 h-4" /> : variation < 0 ? <TrendingDown className="w-4 h-4" /> : <Minus className="w-4 h-4" />}
-                {formatCurrency(Math.abs(variation))} ({variationPercent.toFixed(1)}%)
-              </span>
-            </div>
-          )}
+          <div className="flex items-center gap-2 text-sm">
+            <span className="text-zinc-500">vs Período Anterior ({formatCurrency(prevCapital)}):</span>
+            <span className={`flex items-center gap-1 font-bold ${
+              variation > 0 ? "text-emerald-400" : variation < 0 ? "text-rose-400" : "text-zinc-400"
+            }`}>
+              {variation > 0 ? <TrendingUp className="w-4 h-4" /> : variation < 0 ? <TrendingDown className="w-4 h-4" /> : <Minus className="w-4 h-4" />}
+              {formatCurrency(Math.abs(variation))} ({variationPercent.toFixed(1)}%)
+            </span>
+          </div>
         </div>
         
         <table className="w-full text-left text-lg">

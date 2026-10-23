@@ -1,5 +1,6 @@
 "use client";
 
+import { todayPY } from "@/lib/dates";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createLoan } from "@/actions/finance";
@@ -17,7 +18,7 @@ export function CreateLoanForm({
 
   const [providerId, setProviderId] = useState(providers[0]?.id || "");
   const [bankAccountId, setBankAccountId] = useState(bankAccounts[0]?.id || "");
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const [date, setDate] = useState(todayPY());
   const [concept, setConcept] = useState("");
   const [principalAmount, setPrincipalAmount] = useState("");
 
