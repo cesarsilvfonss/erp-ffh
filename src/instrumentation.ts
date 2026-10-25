@@ -7,4 +7,8 @@ forceServerTimezone();
 
 export async function register() {
   forceServerTimezone();
+  if (process.env.NEXT_RUNTIME === "nodejs") {
+    const { autoBootTelegramBotIfConfigured } = await import("./lib/telegram-bot");
+    autoBootTelegramBotIfConfigured();
+  }
 }

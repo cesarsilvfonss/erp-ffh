@@ -17,7 +17,8 @@ import {
   LogOut,
   UserCog,
   Landmark,
-  FileText
+  FileText,
+  Bot
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useMobileMenu } from "./MobileMenuContext";
@@ -57,6 +58,7 @@ const menuCategories = [
       { icon: Users, label: "Proveedores", href: "/terceros/proveedores", roles: ["ADMIN", "ADMINISTRATION"] },
       { icon: Settings, label: "Cat. Gastos", href: "/configuracion/gastos", roles: ["ADMIN", "ADMINISTRATION"] },
       { icon: Settings, label: "Artículos", href: "/configuracion/articulos", roles: ["ADMIN", "ADMINISTRATION"] },
+      { icon: Bot, label: "Bot Telegram IA", href: "/configuracion/telegram", roles: ["ADMIN", "ADMINISTRATION"] },
       { icon: UserCog, label: "Usuarios", href: "/configuracion/usuarios", roles: ["ADMIN"] },
     ]
   }

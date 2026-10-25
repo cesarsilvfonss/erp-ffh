@@ -4,11 +4,12 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Plus, X, Loader2, Pencil, Power, RefreshCcw, AlertTriangle, Users, CheckCircle2, ShieldAlert,
-  History, ChevronDown, ChevronRight, ArrowRight, UserCheck, Wallet, Landmark,
+  History, ChevronDown, ChevronRight, ArrowRight, UserCheck, Wallet, Landmark, Lock, Unlock, CalendarDays, Eye,
 } from "lucide-react";
 import { createShareholder, updateShareholder, toggleShareholderStatus, payRetention } from "@/actions/shareholders";
 import { formatDatePY, startOfDayPY } from "@/lib/dates";
 import type { DistributionResult } from "@/lib/shareholders";
+import { ShareholdersPdfButton, type ShareholdersPdfData } from "./ShareholdersPdfButton";
 
 type Person = {
   id: string;
@@ -33,6 +34,7 @@ type HistoryClosure = {
   id: string;
   periodStart: string;
   closingDate: string;
+  periodDays: number;
   previousCapital: number;
   grossIncome: number;
   participantShare: number;
@@ -70,8 +72,13 @@ const MOVEMENT_LABEL: Record<string, string> = {
 };
 
 export function ShareholdersClient({
+  mode,
+  selectedClosureId,
+  closureOptions,
   people,
   periodStart,
+  periodEnd,
+  periodDays,
   today,
   periodInitialCapital,
   currentCapital,
@@ -82,8 +89,13 @@ export function ShareholdersClient({
   lastSalaries,
   history,
 }: {
+  mode: "LIVE" | "CLOSED";
+  selectedClosureId: string | null;
+  closureOptions: { id: string; periodStart: string; closingDate: string }[];
   people: Person[];
   periodStart: string;
+  periodEnd: string;
+  periodDays: number;
   today: string;
   periodInitialCapital: number;
   currentCapital: number;
@@ -101,16 +113,51 @@ export function ShareholdersClient({
   const [error, setError] = useState("");
   const [busyId, setBusyId] = useState<string | null>(null);
 
-  // Refresco automático cada 60s para reflejar la utilidad en tiempo real.
+  const isLive = mode === "LIVE";
+
+  // Refresco automático cada 60s para reflejar la utilidad en tiempo real (solo período abierto).
   useEffect(() => {
+    if (!isLive) return;
     const t = setInterval(() => router.refresh(), 60_000);
     return () => clearInterval(t);
-  }, [router]);
+  }, [router, isLive]);
 
   const byId = new Map(people.map(p => [p.id, p]));
-  const inactive = people.filter(p => !p.isActive);
+  const inactive = isLive ? people.filter(p => !p.isActive) : [];
   const U = d.grossIncome;
-  const periodToLabel = formatDatePY(startOfDayPY(today));
+  const periodFromLabel = formatDatePY(periodStart);
+  const periodToLabel = formatDatePY(periodEnd);
+
+  // Crecimiento del capital de cada accionista
+  const growthOf = (profit: number, initial: number) => (initial > 0 ? (profit / initial) * 100 : 0);
+  const monthlyOf = (growth: number) => (growth / periodDays) * 30;
+  const totalGrowth = growthOf(d.shareholdersIncome, d.totalInitialCapital);
+
+  function handleSelectPeriod(e: React.ChangeEvent<HTMLSelectElement>) {
+    const v = e.target.value;
+    router.push(v ? `/operaciones/finanzas/accionistas?id=${v}` : `/operaciones/finanzas/accionistas`);
+  }
+
+  const pdfData: ShareholdersPdfData = {
+    mode,
+    periodFromLabel,
+    periodToLabel,
+    periodDays,
+    periodInitialCapital,
+    currentCapital,
+    distribution: d,
+    capitalBalanced: capitalCheck.isBalanced,
+    capitalDifference: capitalCheck.difference,
+    retentionMovements: movements
+      .filter(m => d.participants.some(p => p.id === m.shareholderId))
+      .map(m => ({
+        participant: byId.get(m.shareholderId)?.name || "",
+        date: formatDatePY(m.date),
+        type: MOVEMENT_LABEL[m.type] || m.type,
+        concept: m.concept,
+        amount: m.amount,
+      })),
+  };
 
   async function handleToggle(p: Person) {
     const msg = p.isActive
@@ -130,38 +177,74 @@ export function ShareholdersClient({
   return (
     <div className="space-y-6">
       {/* Encabezado */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-zinc-900/50 p-6 border border-zinc-800 rounded-xl">
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 bg-zinc-900/50 p-6 border border-zinc-800 rounded-xl">
         <div>
           <h1 className="text-2xl font-bold text-zinc-100 flex items-center gap-2">
             <Users className="w-6 h-6 text-emerald-400" />
             Accionistas
           </h1>
-          <p className="text-zinc-400 text-sm mt-1">
-            Distribución de la utilidad — Período del {formatDatePY(periodStart)} al {periodToLabel} (en vivo)
-          </p>
+          <p className="text-zinc-400 text-sm mt-1">Distribución de la utilidad del período</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <button
-            onClick={() => router.refresh()}
-            className="flex items-center gap-2 px-4 py-2 text-zinc-300 hover:bg-zinc-800 rounded-lg font-medium transition-colors border border-zinc-800"
+          <select
+            value={selectedClosureId || ""}
+            onChange={handleSelectPeriod}
+            className="bg-zinc-950 border border-zinc-800 rounded-lg px-4 py-2 text-zinc-100 focus:border-emerald-500 focus:outline-none"
           >
-            <RefreshCcw className="w-4 h-4" />
-            Actualizar
-          </button>
-          <button
-            onClick={() => setNewType("PARTICIPANT")}
-            className="px-4 py-2 rounded-lg flex items-center gap-2 font-medium transition-colors border border-cyan-500/30 text-cyan-300 hover:bg-cyan-500/10"
-          >
-            <Plus className="w-4 h-4" />
-            Participante
-          </button>
-          <button
-            onClick={() => setNewType("SHAREHOLDER")}
-            className="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 font-medium transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            Accionista
-          </button>
+            <option value="">PERÍODO ABIERTO (EN VIVO)</option>
+            {closureOptions.map(c => (
+              <option key={c.id} value={c.id}>
+                CERRADO: {formatDatePY(c.periodStart)} AL {formatDatePY(startOfDayPY(c.closingDate))}
+              </option>
+            ))}
+          </select>
+          <ShareholdersPdfButton data={pdfData} />
+          {isLive && (
+            <>
+              <button
+                onClick={() => router.refresh()}
+                className="flex items-center gap-2 px-4 py-2 text-zinc-300 hover:bg-zinc-800 rounded-lg font-medium transition-colors border border-zinc-800"
+              >
+                <RefreshCcw className="w-4 h-4" />
+                Actualizar
+              </button>
+              <button
+                onClick={() => setNewType("PARTICIPANT")}
+                className="px-4 py-2 rounded-lg flex items-center gap-2 font-medium transition-colors border border-cyan-500/30 text-cyan-300 hover:bg-cyan-500/10"
+              >
+                <Plus className="w-4 h-4" />
+                Participante
+              </button>
+              <button
+                onClick={() => setNewType("SHAREHOLDER")}
+                className="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 font-medium transition-colors"
+              >
+                <Plus className="w-4 h-4" />
+                Accionista
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* Estado y duración del período */}
+      <div className={`p-4 rounded-xl border flex flex-col sm:flex-row gap-3 sm:items-center justify-between ${
+        isLive ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400" : "bg-rose-500/10 border-rose-500/20 text-rose-400"
+      }`}>
+        <div className="flex items-center gap-3">
+          {isLive ? <Unlock className="w-5 h-5" /> : <Lock className="w-5 h-5" />}
+          <div>
+            <p className="font-bold">{isLive ? "PERÍODO ABIERTO (EN VIVO)" : "PERÍODO CERRADO"}</p>
+            <p className="text-sm opacity-80">
+              Del {periodFromLabel} al {periodToLabel}{isLive ? " (hoy)" : ""}
+              {isLive ? " — valores estimados en tiempo real" : " — valores liquidados al cierre"}
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2 text-zinc-100">
+          <CalendarDays className="w-5 h-5 opacity-80" />
+          <span className="text-sm text-zinc-400">Duración del período:</span>
+          <span className="text-xl font-bold">{periodDays} {periodDays === 1 ? "día" : "días"}</span>
         </div>
       </div>
 
@@ -183,12 +266,12 @@ export function ShareholdersClient({
       <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl overflow-hidden">
         <div className="bg-zinc-950 px-6 py-4 border-b border-zinc-800">
           <h2 className="text-lg font-bold uppercase text-zinc-100 tracking-wide">1. Utilidad del Período</h2>
-          <p className="text-xs text-zinc-500 mt-1">Cálculo en tiempo real. Al cerrar el período se liquida con estos mismos valores.</p>
+          <p className="text-xs text-zinc-500 mt-1">{isLive ? "Cálculo en tiempo real. Al cerrar el período se liquida con estos mismos valores." : "Valores liquidados en el cierre del período."}</p>
         </div>
         <table className="w-full text-sm">
           <tbody className="divide-y divide-zinc-800/50">
-            <CascadeRow label="Capital actual (en vivo)" hint="Neto de proveedores y retenciones" value={formatCurrency(currentCapital)} />
-            <CascadeRow label="(−) Capital inicial del período" hint="Capital del último cierre" value={`− ${formatCurrency(periodInitialCapital)}`} />
+            <CascadeRow label={isLive ? "Capital actual (en vivo)" : "Capital al cierre antes de participaciones"} hint="Neto de proveedores y retenciones" value={formatCurrency(currentCapital)} />
+            <CascadeRow label="(−) Capital inicial del período" hint="Capital del cierre anterior" value={`− ${formatCurrency(periodInitialCapital)}`} />
             <CascadeRow strong label="= UTILIDAD BRUTA DEL PERÍODO" value={formatCurrency(U)} valueClass={moneyTone(U)} />
             {d.participants.map(p => (
               <CascadeRow
@@ -231,28 +314,28 @@ export function ShareholdersClient({
                   {formatPercent(row.profitShare)} de la utilidad bruta · {formatPercent(100 - row.retentionRate, 0)} salario · {formatPercent(row.retentionRate, 0)} retenido
                 </p>
               </div>
-              <RowActions p={p} busy={busyId === p.id} onEdit={setEditing} onToggle={handleToggle} />
+              {isLive && <RowActions p={p} busy={busyId === p.id} onEdit={setEditing} onToggle={handleToggle} />}
             </div>
 
             <div className="p-6 grid grid-cols-1 md:grid-cols-4 gap-3 text-sm">
               <InfoBox label={`Participación ${formatPercent(row.profitShare)}`} value={formatCurrency(row.amount)} tone="text-cyan-400" />
               <InfoBox
-                label={`Salario ${formatPercent(100 - row.retentionRate, 0)} (este período)`}
+                label={`Salario ${formatPercent(100 - row.retentionRate, 0)}`}
                 value={formatCurrency(row.salary)}
                 tone="text-amber-400"
-                hint={`Se genera al cerrar: gasto "SUELDOS Y BONIFICACIONES" con fecha del día de cierre`}
+                hint={isLive ? `Se genera al cerrar: gasto "SUELDOS Y BONIFICACIONES" con fecha del día de cierre` : `Gasto "SUELDOS Y BONIFICACIONES" del día de cierre`}
               />
               <InfoBox
-                label={`Retención ${formatPercent(row.retentionRate, 0)} (este período)`}
+                label={`Retención ${formatPercent(row.retentionRate, 0)}`}
                 value={formatCurrency(row.retained)}
                 tone="text-zinc-100"
-                hint="Se suma a su saldo al cerrar"
+                hint={isLive ? "Se suma a su saldo al cerrar" : "Sumada a su saldo en el cierre"}
               />
               <InfoBox
-                label="Saldo de retención acumulado"
+                label={isLive ? "Saldo de retención acumulado" : "Retención al inicio del período"}
                 value={formatCurrency(row.retentionBefore)}
                 tone="text-zinc-100"
-                hint={`Después del cierre: ${formatCurrency(row.retentionAfter)}`}
+                hint={`${isLive ? "Después del cierre" : "Al cierre"}: ${formatCurrency(row.retentionAfter)}`}
               />
             </div>
 
@@ -260,7 +343,7 @@ export function ShareholdersClient({
               <div className="text-xs text-zinc-400">
                 {last ? (
                   <span>
-                    Salario del último cierre ({formatDatePY(startOfDayPY(last.closingDate))}): <span className="font-semibold text-zinc-200">{formatCurrency(last.amount)}</span> —{" "}
+                    Salario {isLive ? "del último cierre" : "de este cierre"} ({formatDatePY(startOfDayPY(last.closingDate))}): <span className="font-semibold text-zinc-200">{formatCurrency(last.amount)}</span> —{" "}
                     {last.status === "PAID" ? (
                       <span className="text-emerald-400 font-semibold">PAGADO</span>
                     ) : (
@@ -273,18 +356,18 @@ export function ShareholdersClient({
                   <span>Aún no hay salarios liquidados.</span>
                 )}
               </div>
-              <button
+              {isLive && <button
                 onClick={() => setPayingRetention(p)}
                 disabled={row.retentionBefore <= 0}
                 className="flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors border border-cyan-500/30 text-cyan-300 hover:bg-cyan-500/10 disabled:opacity-40"
               >
                 <Wallet className="w-4 h-4" />
                 Pagar Retención
-              </button>
+              </button>}
             </div>
 
             <div className="border-t border-zinc-800 px-6 py-4">
-              <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-2">Movimientos de la retención</p>
+              <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-2">Movimientos de la retención{isLive ? "" : ` (hasta el ${periodToLabel})`}</p>
               {myMovements.length === 0 ? (
                 <p className="text-xs text-zinc-600">Sin movimientos.</p>
               ) : (
@@ -346,18 +429,21 @@ export function ShareholdersClient({
                 <th className="px-4 py-3 text-right">Capital Inicial</th>
                 <th className="px-4 py-3 text-right">% Utilidad Bruta</th>
                 <th className="px-4 py-3 text-right">Capitalización</th>
-                <th className="px-4 py-3 text-right">Capital Esperado Final</th>
-                <th className="px-4 py-3 w-20"></th>
+                <th className="px-4 py-3 text-right">{isLive ? "Capital Esperado Final" : "Capital Final"}</th>
+                <th className="px-4 py-3 text-right">% Crecimiento</th>
+                <th className="px-4 py-3 text-right" title={`% Crecimiento / ${periodDays} días × 30`}>% Crec. Mensual</th>
+                {isLive && <th className="px-4 py-3 w-20"></th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-800/50">
               {d.shareholders.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="px-4 py-10 text-center text-zinc-500">No hay accionistas registrados.</td>
+                  <td colSpan={9} className="px-4 py-10 text-center text-zinc-500">No hay accionistas registrados.</td>
                 </tr>
               )}
               {d.shareholders.map(r => {
                 const p = byId.get(r.id)!;
+                const g = growthOf(r.profitAmount, r.initialCapital);
                 return (
                   <tr key={r.id} className="hover:bg-zinc-800/20 transition-colors">
                     <td className="px-4 py-3">
@@ -369,9 +455,13 @@ export function ShareholdersClient({
                     <td className="px-4 py-3 text-right text-cyan-400">{formatPercent(r.profitShare, 4)}</td>
                     <td className={`px-4 py-3 text-right font-medium ${moneyTone(r.profitAmount)}`}>{formatCurrency(r.profitAmount)}</td>
                     <td className="px-4 py-3 text-right text-zinc-100 font-bold">{formatCurrency(r.finalCapital)}</td>
-                    <td className="px-4 py-3">
-                      <RowActions p={p} busy={busyId === p.id} onEdit={setEditing} onToggle={handleToggle} />
-                    </td>
+                    <td className={`px-4 py-3 text-right font-medium ${moneyTone(g)}`}>{formatPercent(g)}</td>
+                    <td className={`px-4 py-3 text-right font-medium ${moneyTone(g)}`}>{formatPercent(monthlyOf(g))}</td>
+                    {isLive && (
+                      <td className="px-4 py-3">
+                        <RowActions p={p} busy={busyId === p.id} onEdit={setEditing} onToggle={handleToggle} />
+                      </td>
+                    )}
                   </tr>
                 );
               })}
@@ -385,16 +475,20 @@ export function ShareholdersClient({
                   <td className="px-4 py-4 text-right text-cyan-400">{formatPercent(d.shareholders.reduce((a, r) => a + r.profitShare, 0), 4)}</td>
                   <td className={`px-4 py-4 text-right ${moneyTone(d.shareholdersIncome)}`}>{formatCurrency(d.shareholdersIncome)}</td>
                   <td className="px-4 py-4 text-right text-emerald-400 text-base">{formatCurrency(d.totalFinalCapital)}</td>
-                  <td></td>
+                  <td className={`px-4 py-4 text-right ${moneyTone(totalGrowth)}`}>{formatPercent(totalGrowth)}</td>
+                  <td className={`px-4 py-4 text-right ${moneyTone(totalGrowth)}`}>{formatPercent(monthlyOf(totalGrowth))}</td>
+                  {isLive && <td></td>}
                 </tr>
               </tfoot>
             )}
           </table>
         </div>
         <p className="px-6 py-3 text-xs text-zinc-500 border-t border-zinc-800">
-          Capital del cierre = capital actual {formatCurrency(currentCapital)} − participación {formatCurrency(d.participantsTotal)} ={" "}
+          Capital del cierre = capital {isLive ? "actual" : "antes de participaciones"} {formatCurrency(currentCapital)} − participación {formatCurrency(d.participantsTotal)} ={" "}
           <span className="font-semibold text-zinc-300">{formatCurrency(currentCapital - d.participantsTotal)}</span> = suma de capitales finales{" "}
           {formatCurrency(d.totalFinalCapital)}. El período siguiente arranca con utilidad 0.
+          <br />
+          % Crecimiento = Capitalización / Capital Inicial. % Crec. Mensual = % Crecimiento / {periodDays} días del período × 30.
         </p>
       </div>
 
@@ -417,7 +511,7 @@ export function ShareholdersClient({
       )}
 
       {/* ===== BLOQUE 4: Historial ===== */}
-      <HistorySection history={history} />
+      <HistorySection history={history} selectedId={selectedClosureId} />
 
       {formOpen && (
         <PersonFormModal
@@ -482,8 +576,9 @@ function InfoBox({ label, value, tone, hint }: { label: string; value: string; t
   );
 }
 
-function HistorySection({ history }: { history: HistoryClosure[] }) {
-  const [openId, setOpenId] = useState<string | null>(history[0]?.id ?? null);
+function HistorySection({ history, selectedId }: { history: HistoryClosure[]; selectedId: string | null }) {
+  const router = useRouter();
+  const [openId, setOpenId] = useState<string | null>(selectedId ?? history[0]?.id ?? null);
 
   return (
     <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl overflow-hidden">
@@ -506,6 +601,8 @@ function HistorySection({ history }: { history: HistoryClosure[] }) {
                   <span className="flex items-center gap-2 font-semibold text-zinc-200">
                     {isOpen ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
                     {formatDatePY(c.periodStart)} al {formatDatePY(startOfDayPY(c.closingDate))}
+                    <span className="text-xs font-normal text-zinc-500">({c.periodDays} días)</span>
+                    {selectedId === c.id && <span className="text-[10px] px-2 py-0.5 rounded-full bg-rose-500/10 text-rose-300 border border-rose-500/20">VIENDO</span>}
                   </span>
                   <span className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-zinc-400">
                     <span>{formatCurrency(c.previousCapital)}</span>
@@ -513,6 +610,18 @@ function HistorySection({ history }: { history: HistoryClosure[] }) {
                     <span className="text-zinc-200 font-semibold">{formatCurrency(c.totalCapital)}</span>
                     <span>Utilidad bruta: <span className={moneyTone(c.grossIncome)}>{formatCurrency(c.grossIncome)}</span></span>
                     <span>Participación: <span className="text-cyan-400">{formatCurrency(c.participantShare)}</span></span>
+                    {selectedId !== c.id && (
+                      <span
+                        role="link"
+                        onClick={e => {
+                          e.stopPropagation();
+                          router.push(`/operaciones/finanzas/accionistas?id=${c.id}`);
+                        }}
+                        className="flex items-center gap-1 text-emerald-400 hover:underline cursor-pointer"
+                      >
+                        <Eye className="w-3 h-3" /> Ver formulario
+                      </span>
+                    )}
                   </span>
                 </button>
                 {isOpen && (
