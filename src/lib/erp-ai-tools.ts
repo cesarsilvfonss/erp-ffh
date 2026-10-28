@@ -232,6 +232,8 @@ export async function consultarCuentasPorCobrar(args?: {
     string,
     {
       cliente: string;
+      nombreComercial: string | null;
+      ruc: string | null;
       telefono: string | null;
       saldoPendienteTotal: number;
       facturasPendientes: number;
@@ -248,6 +250,8 @@ export async function consultarCuentasPorCobrar(args?: {
     if (!porCliente[key]) {
       porCliente[key] = {
         cliente: r.client.legalName,
+        nombreComercial: r.client.tradeName,
+        ruc: r.client.ruc,
         telefono: r.client.phone,
         saldoPendienteTotal: 0,
         facturasPendientes: 0,
@@ -275,6 +279,8 @@ export async function consultarCuentasPorCobrar(args?: {
     .sort((a, b) => b.saldoPendienteTotal - a.saldoPendienteTotal)
     .map((c) => ({
       cliente: c.cliente,
+      nombreComercial: c.nombreComercial || "-",
+      rucExacto: c.ruc || "Sin RUC registrado",
       telefono: c.telefono || "-",
       facturasPendientes: c.facturasPendientes,
       deudaTotalCliente: fmtGs(c.saldoPendienteTotal),
@@ -325,6 +331,8 @@ export async function consultarCuentasPorPagar(args?: {
     string,
     {
       proveedor: string;
+      nombreComercial: string | null;
+      ruc: string | null;
       telefono: string | null;
       saldoPendienteTotal: number;
       cuentasPendientes: number;
@@ -341,6 +349,8 @@ export async function consultarCuentasPorPagar(args?: {
     if (!porProveedor[key]) {
       porProveedor[key] = {
         proveedor: p.provider.legalName,
+        nombreComercial: p.provider.tradeName,
+        ruc: p.provider.ruc,
         telefono: p.provider.phone,
         saldoPendienteTotal: 0,
         cuentasPendientes: 0,
@@ -373,6 +383,8 @@ export async function consultarCuentasPorPagar(args?: {
     .sort((a, b) => b.saldoPendienteTotal - a.saldoPendienteTotal)
     .map((p) => ({
       proveedor: p.proveedor,
+      nombreComercial: p.nombreComercial || "-",
+      rucExacto: p.ruc || "Sin RUC registrado",
       telefono: p.telefono || "-",
       cuentasPendientes: p.cuentasPendientes,
       deudaTotalConProveedor: fmtGs(p.saldoPendienteTotal),
@@ -726,6 +738,8 @@ export async function consultarVentas(args?: {
         fecha: formatDatePY(s.date),
         factura: s.invoiceNumber || "Sin factura",
         cliente: s.client.legalName,
+        nombreComercialCliente: s.client.tradeName || "-",
+        rucCliente: s.client.ruc || "Sin RUC registrado",
         kilosTotales: fmtKg(totalKilos),
         totalVenta: fmtGs(s.totalValue),
         saldoPendienteDeCobro: fmtGs(saldoPendiente),
