@@ -66,6 +66,16 @@ export async function obtenerResumenGeneralYCapital() {
         details: true,
         closure: true,
         expenses: true,
+        inventoryLots: {
+          include: {
+            saleDetails: {
+              where: { sale: { status: { not: "CANCELLED" } } },
+            },
+            movements: {
+              where: { type: "OUT", concept: { contains: "MERMA" } },
+            },
+          },
+        },
       },
       orderBy: { batchNumber: "desc" },
     }),
@@ -135,6 +145,25 @@ export async function obtenerResumenGeneralYCapital() {
       const cabezas = b.closure?.totalHeads ?? b.details.reduce((s, d) => s + d.quantity, 0);
       const valorCompra = b.closure?.totalValue || 0;
       const gastosLote = b.expenses.reduce((s, e) => s + e.amount, 0);
+
+      let ventasGeneradas = 0;
+      let costoVendido = 0;
+      let costoMermas = 0;
+      let stockRestanteKg = 0;
+
+      for (const lot of b.inventoryLots) {
+        stockRestanteKg += lot.currentStock;
+        for (const sd of lot.saleDetails) {
+          ventasGeneradas += sd.quantityKg * sd.salePrice;
+          costoVendido += sd.quantityKg * lot.unitCost;
+        }
+        for (const m of lot.movements) {
+          costoMermas += m.quantity * lot.unitCost;
+        }
+      }
+
+      const resultadoNeto = ventasGeneradas - costoVendido - gastosLote - costoMermas;
+
       return {
         loteNumero: `Lote #${b.batchNumber}`,
         fecha: formatDatePY(b.date),
@@ -149,6 +178,13 @@ export async function obtenerResumenGeneralYCapital() {
           valorCompra > 0
             ? `${((gastosLote / valorCompra) * 100).toFixed(2)}%`
             : "No disponible (sin cierre de compra registrado)",
+        ingresosPorVentasDelLote: fmtGs(ventasGeneradas),
+        resultadoNetoEnValor: fmtGs(resultadoNeto),
+        porcentajeResultadoSobreCompra:
+          valorCompra > 0
+            ? `${((resultadoNeto / valorCompra) * 100).toFixed(2)}%`
+            : "No disponible (sin cierre de compra registrado)",
+        stockRestanteEnCamara: fmtKg(stockRestanteKg),
       };
     }),
     distribucionEstimadaAlHoy: {
