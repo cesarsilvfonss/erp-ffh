@@ -39,7 +39,7 @@ export function CloseBatchButton({
 
   // Agrupar pesos brutos por itemId
   const grossWeightPerItem = batchDetails.reduce((acc, d) => {
-    acc[d.item.id] = (acc[d.item.id] || 0) + d.weight;
+    acc[d.item.id] = (acc[d.item.id] || 0) + (d.netWeight ?? d.weight ?? 0);
     return acc;
   }, {} as Record<string, number>);
 

@@ -27,6 +27,7 @@ export async function obtenerResumenGeneralYCapital() {
     liveStockClosures,
     retentionBalance,
     distInputs,
+    periodBatches,
   ] = await Promise.all([
     prisma.sale.aggregate({
       where: { date: { gte: start }, status: { not: "CANCELLED" } },
@@ -58,6 +59,16 @@ export async function obtenerResumenGeneralYCapital() {
     }),
     getTotalRetentionBalance(),
     loadDistributionInputs(),
+    prisma.batch.findMany({
+      where: { date: { gte: start } },
+      include: {
+        provider: true,
+        details: true,
+        closure: true,
+        expenses: true,
+      },
+      orderBy: { batchNumber: "desc" },
+    }),
   ]);
 
   const bankBalance = bankAccounts.reduce((acc, account) => {
@@ -115,7 +126,31 @@ export async function obtenerResumenGeneralYCapital() {
       cantidadLotesCerrados: purchasesAgg._count.id,
       gastosTotales: fmtGs(expensesAgg._sum.amount || 0),
       cantidadGastos: expensesAgg._count.id,
+      porcentajeGastosTotalesSobreCompras:
+        (purchasesAgg._sum.totalValue || 0) > 0
+          ? `${(((expensesAgg._sum.amount || 0) / (purchasesAgg._sum.totalValue || 1)) * 100).toFixed(2)}%`
+          : "No disponible (sin compras cerradas)",
     },
+    detalleLotesDelPeriodo: periodBatches.map((b) => {
+      const cabezas = b.closure?.totalHeads ?? b.details.reduce((s, d) => s + d.quantity, 0);
+      const valorCompra = b.closure?.totalValue || 0;
+      const gastosLote = b.expenses.reduce((s, e) => s + e.amount, 0);
+      return {
+        loteNumero: `Lote #${b.batchNumber}`,
+        fecha: formatDatePY(b.date),
+        proveedor: b.provider.legalName,
+        estado: b.status,
+        cabezas,
+        valorPagadoPorLote: b.closure
+          ? fmtGs(valorCompra)
+          : "No registrado en el sistema (lote abierto sin cierre de compra)",
+        gastosDelLote: fmtGs(gastosLote),
+        porcentajeGastosSobreCompra:
+          valorCompra > 0
+            ? `${((gastosLote / valorCompra) * 100).toFixed(2)}%`
+            : "No disponible (sin cierre de compra registrado)",
+      };
+    }),
     distribucionEstimadaAlHoy: {
       participantes: dist.participants.map((p) => ({
         nombre: p.name,
@@ -279,9 +314,9 @@ export async function consultarCuentasPorCobrar(args?: {
     .sort((a, b) => b.saldoPendienteTotal - a.saldoPendienteTotal)
     .map((c) => ({
       cliente: c.cliente,
-      nombreComercial: c.nombreComercial || "-",
-      rucExacto: c.ruc || "Sin RUC registrado",
-      telefono: c.telefono || "-",
+      nombreComercial: c.nombreComercial || "No registrado en el sistema",
+      rucExacto: c.ruc || "No registrado en el sistema",
+      telefono: c.telefono || "No registrado en el sistema",
       facturasPendientes: c.facturasPendientes,
       deudaTotalCliente: fmtGs(c.saldoPendienteTotal),
       cuentas: c.detalle.slice(0, 15),
@@ -383,9 +418,9 @@ export async function consultarCuentasPorPagar(args?: {
     .sort((a, b) => b.saldoPendienteTotal - a.saldoPendienteTotal)
     .map((p) => ({
       proveedor: p.proveedor,
-      nombreComercial: p.nombreComercial || "-",
-      rucExacto: p.ruc || "Sin RUC registrado",
-      telefono: p.telefono || "-",
+      nombreComercial: p.nombreComercial || "No registrado en el sistema",
+      rucExacto: p.ruc || "No registrado en el sistema",
+      telefono: p.telefono || "No registrado en el sistema",
       cuentasPendientes: p.cuentasPendientes,
       deudaTotalConProveedor: fmtGs(p.saldoPendienteTotal),
       cuentas: p.detalle.slice(0, 15),
@@ -630,10 +665,19 @@ export async function consultarLotesYFaenas(args?: {
         estado: b.status,
         modalidad: b.isHookPurchase ? "Compra al Gancho" : b.isLiveSale ? "Venta en Pie" : "Compra en Pie / Faena",
         proveedor: b.provider.legalName,
-        frigorificoMatadero: b.slaughterhouse?.legalName || "-",
-        descripcion: b.description || "-",
+        frigorificoMatadero: b.slaughterhouse?.legalName || "No registrado en el sistema",
+        descripcion: b.description || "No registrado en el sistema",
         cabezas: totalCabezas,
         pesoBrutoEnPie: fmtKg(pesoBruto),
+        detalleCategoriasRomaneo:
+          b.details.length > 0
+            ? b.details.map((d) => ({
+                categoriaAnimal: d.item.name,
+                condicion: d.condition,
+                cabezas: d.quantity,
+                pesoBrutoKg: fmtKg(d.netWeight),
+              }))
+            : "Sin pesadas de romaneo registradas en el sistema",
         cierreCompra: b.closure
           ? {
               pesoLiquidoPagado: fmtKg(b.closure.totalLiquidWeight),
@@ -645,7 +689,7 @@ export async function consultarLotesYFaenas(args?: {
                 precioPorKg: fmtGs(p.pricePerKg),
               })),
             }
-          : "Aún sin cierre de compra",
+          : "No registrado en el sistema (lote aún abierto sin cierre de compra)",
         faena: b.slaughter
           ? {
               fechaFaena: formatDatePY(b.slaughter.date),
@@ -656,14 +700,35 @@ export async function consultarLotesYFaenas(args?: {
                 kilos: fmtKg(sd.weight),
               })),
             }
-          : "Sin faena registrada",
+          : "No registrado en el sistema (sin faena registrada)",
         rentabilidadYGastosDelLote: {
-          costoCompraHacienda: fmtGs(costoCompra),
+          costoCompraHacienda: b.closure
+            ? fmtGs(costoCompra)
+            : "No registrado en el sistema (sin cierre de compra)",
           gastosDelLote: fmtGs(gastosAsociados),
+          porcentajeGastosSobreValorCompra:
+            costoCompra > 0
+              ? `${((gastosAsociados / costoCompra) * 100).toFixed(2)}%`
+              : "No disponible (sin valor de cierre de compra registrado)",
           ingresosPorVentas: fmtGs(ventasGeneradas),
+          costoMercaderiaVendida: fmtGs(costoVendido),
+          costoMermas: fmtGs(costoMermas),
           utilidadNetaActual: fmtGs(resultadoNeto),
+          porcentajeRentabilidadSobreCompra:
+            costoCompra > 0
+              ? `${((resultadoNeto / costoCompra) * 100).toFixed(2)}%`
+              : "No disponible (sin valor de cierre de compra registrado)",
           stockAunEnCamara: fmtKg(stockRestanteKg),
         },
+        detalleGastosDelLote:
+          b.expenses.length > 0
+            ? b.expenses.map((e) => ({
+                fecha: formatDatePY(e.date),
+                categoria: e.category.name,
+                descripcion: e.description,
+                monto: fmtGs(e.amount),
+              }))
+            : "Sin gastos operativos registrados para este lote",
       };
     }),
   };
@@ -849,10 +914,12 @@ export async function consultarClientesYProveedores(args: {
       const deuda = c.accountsReceivable.reduce((acc, r) => acc + (r.amount - r.paidAmount), 0);
       return {
         nombreRazonSocial: c.legalName,
-        nombreComercial: c.tradeName || "-",
-        ruc: c.ruc || "-",
-        telefono: c.phone || "-",
-        contacto: c.contact || "-",
+        nombreComercial: c.tradeName || "No registrado en el sistema",
+        ruc: c.ruc || "No registrado en el sistema",
+        telefono: c.phone || "No registrado en el sistema",
+        email: c.email || "No registrado en el sistema",
+        contacto: c.contact || "No registrado en el sistema",
+        notas: c.notes || "No registrado en el sistema",
         plazoCreditoDias: c.paymentTermDays,
         deudaActualPendiente: fmtGs(deuda),
       };
@@ -881,9 +948,13 @@ export async function consultarClientesYProveedores(args: {
       const saldoPagar = p.accountsPayable.reduce((acc, a) => acc + (a.amount - a.paidAmount), 0);
       return {
         nombreRazonSocial: p.legalName,
-        nombreComercial: p.tradeName || "-",
-        ruc: p.ruc || "-",
-        telefono: p.phone || "-",
+        nombreComercial: p.tradeName || "No registrado en el sistema",
+        ruc: p.ruc || "No registrado en el sistema",
+        direccion: p.address || "No registrado en el sistema",
+        telefono: p.phone || "No registrado en el sistema",
+        email: p.email || "No registrado en el sistema",
+        contacto: p.contact || "No registrado en el sistema",
+        notas: p.notes || "No registrado en el sistema",
         esFrigorificoMatadero: p.isSlaughterhouse ? "Sí" : "No",
         deudaPendienteConProveedor: fmtGs(saldoPagar),
       };

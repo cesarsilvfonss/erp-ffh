@@ -189,9 +189,103 @@ export async function closeBatch(batchId: string, payload: {
 
     revalidatePath("/operaciones/lotes");
     revalidatePath(`/operaciones/lotes/${batchId}`);
+    revalidatePath("/operaciones/finanzas/cuentas-pagar");
+    revalidatePath("/");
     return { success: true, data: result };
   } catch (error: any) {
     console.error("Error closing batch:", error);
+    return { success: false, error: error.message };
+  }
+}
+
+export async function reopenBatch(batchId: string) {
+  try {
+    const batch = await prisma.batch.findUnique({
+      where: { id: batchId },
+      include: {
+        closure: true,
+        slaughter: true,
+        inventoryLots: {
+          include: {
+            saleDetails: true,
+            movements: true,
+          },
+        },
+      },
+    });
+
+    if (!batch) {
+      throw new Error("Lote no encontrado.");
+    }
+
+    if (batch.status === "OPEN") {
+      throw new Error("El lote ya se encuentra abierto.");
+    }
+
+    await checkPeriodClosure(new Date(batch.date));
+
+    if (batch.slaughter) {
+      throw new Error("No se puede reabrir la compra porque el lote ya tiene una faena iniciada o registrada.");
+    }
+
+    if (batch.inventoryLots.length > 0) {
+      throw new Error("No se puede reabrir la compra porque el lote ya generó stock en inventario.");
+    }
+
+    const payables = await prisma.accountPayable.findMany({
+      where: {
+        sourceId: batchId,
+        type: "BATCH_PURCHASE",
+      },
+      include: {
+        payments: true,
+      },
+    });
+
+    for (const p of payables) {
+      if (p.paidAmount > 0 || p.payments.length > 0) {
+        throw new Error(
+          "No se puede reabrir la compra porque la cuenta por pagar de este lote ya registra pagos. Anule primero los pagos."
+        );
+      }
+    }
+
+    await prisma.$transaction(async (tx) => {
+      // 1. Eliminar Cuentas por Pagar generadas por el cierre de compra del lote
+      await tx.accountPayable.deleteMany({
+        where: {
+          sourceId: batchId,
+          type: "BATCH_PURCHASE",
+        },
+      });
+
+      // 2. Eliminar el cierre de compra (BatchClosure y sus BatchClosurePrice en cascada)
+      if (batch.closure) {
+        await tx.batchClosure.delete({
+          where: { id: batch.closure.id },
+        });
+      }
+
+      // 3. Volver el estado del lote a OPEN
+      await tx.batch.update({
+        where: { id: batchId },
+        data: {
+          status: "OPEN",
+          isLiveSale: false,
+        },
+      });
+    });
+
+    revalidatePath("/operaciones/lotes");
+    revalidatePath(`/operaciones/lotes/${batchId}`);
+    revalidatePath("/operaciones/faena");
+    revalidatePath("/operaciones/finanzas/cuentas-pagar");
+    revalidatePath("/operaciones/finanzas/reporte-saldos");
+    revalidatePath("/");
+
+    return { success: true };
+  } catch (error: any) {
+    console.error("Error reopening batch:", error);
     return { success: false, error: error.message };
   }
 }

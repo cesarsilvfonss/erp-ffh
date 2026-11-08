@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ArrowLeft, CheckCircle2 } from "lucide-react";
 import { RomaneoForm } from "./RomaneoForm";
 import { CloseBatchButton } from "@/components/batches/CloseBatchButton";
+import { ReopenBatchButton } from "@/components/batches/ReopenBatchButton";
 import { BatchDetailActions } from "@/components/batches/BatchDetailActions";
 import { GeneratePdfButton } from "@/components/batches/GeneratePdfButton";
 
@@ -67,9 +68,12 @@ export default async function BatchDetailsPage({ params }: { params: Promise<{ i
             disabled={totalHeads === 0}
           />
           ) : (
-            <div className="flex items-center gap-2 px-4 py-2 bg-zinc-800/50 text-zinc-300 rounded-lg border border-zinc-700/50">
-              <CheckCircle2 className="w-5 h-5 text-emerald-500" />
-              <span className="font-medium">Lote Cerrado</span>
+            <div className="flex items-center gap-3">
+              <ReopenBatchButton batchId={batch.id} />
+              <div className="flex items-center gap-2 px-4 py-2 bg-zinc-800/50 text-zinc-300 rounded-lg border border-zinc-700/50">
+                <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+                <span className="font-medium">Lote Cerrado</span>
+              </div>
             </div>
           )}
         </div>

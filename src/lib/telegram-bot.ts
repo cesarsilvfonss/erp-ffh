@@ -20,7 +20,7 @@ export const MAIN_REPLY_KEYBOARD = {
 // Prompts optimizados para cuando el papá toca uno de los botones rápidos
 const QUICK_BUTTON_PROMPTS: Record<string, string> = {
   "📊 Resumen General":
-    "Dame el resumen general del negocio hoy: capital total actual, utilidad del período abierto, saldos en bancos, stock en cámara y en pie, cuentas por cobrar y por pagar, cheques en cartera y cómo va el período.",
+    "Dame el resumen general del negocio hoy: capital total actual, utilidad del período abierto, saldos en bancos, stock en cámara y en pie, cuentas por cobrar y por pagar, cheques en cartera, cómo va el período, y además muestra obligatoriamente el listado de lotes con el valor pagado por cada lote, los gastos de cada lote y el porcentaje (%) de gastos sobre el valor de compra.",
   "🏦 Saldos en Bancos":
     "Muéstrame el saldo actual de cada cuenta bancaria y caja, el total general en bancos y los últimos 5 movimientos más importantes.",
   "🥩 Stock Cámara y Pie":
@@ -32,7 +32,7 @@ const QUICK_BUTTON_PROMPTS: Record<string, string> = {
   "🧾 Cheques en Cartera":
     "Muéstrame todos los cheques en cartera pendientes de depositar, quién los entregó, de qué banco son, cuándo vencen y el monto total.",
   "🐄 Últimos Lotes":
-    "Muéstrame un resumen de los últimos 8 lotes de hacienda comprados, su proveedor, cabezas, peso, rendimiento de faena y rentabilidad.",
+    "Muéstrame un resumen de los últimos 8 lotes de hacienda comprados, incluyendo su proveedor, cabezas, peso, valor pagado por el ganado (costo de compra), gastos del lote y qué porcentaje representan los gastos sobre el valor de compra, rendimiento de faena y rentabilidad.",
   "📈 Ventas y Gastos":
     "Muéstrame un resumen de las últimas ventas realizadas y el resumen de gastos operativos por categoría del período actual.",
 };
