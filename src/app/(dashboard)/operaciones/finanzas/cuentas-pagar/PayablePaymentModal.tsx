@@ -1,7 +1,7 @@
 "use client";
 
 import { todayPY } from "@/lib/dates";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { X, CheckCircle2 } from "lucide-react";
@@ -24,6 +24,18 @@ export function PayablePaymentModal({
   const [date, setDate] = useState(todayPY());
   const [bankAccountId, setBankAccountId] = useState(banks[0]?.id || "");
   const [reference, setReference] = useState("");
+
+  // Al abrir el pago, autocompletar con el saldo pendiente de la cuenta
+  useEffect(() => {
+    if (isOpen && payable) {
+      const pending = Math.round((payable.amount - payable.paidAmount) * 100) / 100;
+      setAmount(pending > 0 ? String(pending) : "");
+      setMethod("TRANSFER");
+      setDate(todayPY());
+      setReference("");
+      setBankAccountId(banks[0]?.id || "");
+    }
+  }, [payable, isOpen, banks]);
 
   if (!isOpen || !payable) return null;
 
@@ -89,6 +101,7 @@ export function PayablePaymentModal({
                 required
                 max={balance}
                 min={1}
+                step="any"
                 value={amount}
                 onChange={e => setAmount(e.target.value)}
                 className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-4 py-2.5 text-zinc-100 font-mono focus:outline-none focus:border-emerald-500/50"

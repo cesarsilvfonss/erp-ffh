@@ -7,17 +7,29 @@ import { Banknote, CheckCircle2, Clock, ChevronDown, ChevronUp } from "lucide-re
 import { PaymentModal } from "./PaymentModal";
 
 export function ReceivablesList({ initialReceivables, banks }: { initialReceivables: any[], banks: any[] }) {
-  const [receivables, setReceivables] = useState(initialReceivables);
+  // Se usa directamente lo que llega del servidor para que, después de registrar
+  // un pago (router.refresh), la lista y los saldos se actualicen.
+  const receivables = initialReceivables;
   const [selectedReceivable, setSelectedReceivable] = useState<any>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const formatCurrency = (val: number) => new Intl.NumberFormat('es-PY', { style: 'currency', currency: 'PYG' }).format(val);
 
-  const filteredReceivables = receivables.filter(rec => 
-    rec.client.legalName.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    (rec.client.ruc && rec.client.ruc.includes(searchTerm))
-  );
+  const filteredReceivables = receivables
+    .filter(rec => 
+      rec.client.legalName.toLowerCase().includes(searchTerm.toLowerCase()) || 
+      (rec.client.ruc && rec.client.ruc.includes(searchTerm)) ||
+      (rec.sale?.invoiceNumber && rec.sale.invoiceNumber.includes(searchTerm))
+    )
+    // Primero lo pendiente (vencimiento más próximo) y después lo pagado (más reciente primero)
+    .sort((a, b) => {
+      const aPaid = a.status === "PAID" ? 1 : 0;
+      const bPaid = b.status === "PAID" ? 1 : 0;
+      if (aPaid !== bPaid) return aPaid - bPaid;
+      const diff = new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+      return aPaid ? -diff : diff;
+    });
 
   return (
     <>

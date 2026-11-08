@@ -4,6 +4,7 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { ExtractoClient } from "./ExtractoClient";
+import { todayPY, startOfDayPY, endOfDayPY } from "@/lib/dates";
 
 export const dynamic = "force-dynamic";
 
@@ -12,7 +13,7 @@ export default async function BankExtractPage({
   searchParams 
 }: { 
   params: Promise<{ id: string }>,
-  searchParams: Promise<{ month?: string, year?: string }> 
+  searchParams: Promise<{ from?: string, to?: string }> 
 }) {
   const session = await getServerSession(authOptions);
   
@@ -30,13 +31,15 @@ export default async function BankExtractPage({
 
   if (!bank) return notFound();
 
-  const now = new Date();
-  const month = resolvedSearchParams.month ? parseInt(resolvedSearchParams.month) : now.getMonth();
-  const year = resolvedSearchParams.year ? parseInt(resolvedSearchParams.year) : now.getFullYear();
+  // Rango de fechas (hora Asunción). Por defecto: del 1° del mes actual a hoy.
+  const isYmd = (v?: string) => !!v && /^\d{4}-\d{2}-\d{2}$/.test(v);
+  const today = todayPY();
+  let from = isYmd(resolvedSearchParams.from) ? resolvedSearchParams.from! : `${today.slice(0, 8)}01`;
+  let to = isYmd(resolvedSearchParams.to) ? resolvedSearchParams.to! : today;
+  if (from > to) [from, to] = [to, from];
 
-  // Fecha inicio y fin del mes seleccionado
-  const startDate = new Date(year, month, 1);
-  const endDate = new Date(year, month + 1, 0, 23, 59, 59, 999);
+  const startDate = startOfDayPY(from);
+  const endDate = endOfDayPY(to);
 
   // Obtener todas las transacciones anteriores a startDate para calcular saldo anterior
   const previousTransactions = await prisma.transaction.findMany({
@@ -70,7 +73,7 @@ export default async function BankExtractPage({
         }
       }
     },
-    orderBy: { date: "asc" } // Importante para calcular el running balance
+    orderBy: [{ date: "asc" }, { createdAt: "asc" }] // Importante para calcular el running balance
   });
 
   // Calcular el Running Balance fila por fila
@@ -102,8 +105,8 @@ export default async function BankExtractPage({
         rows={extractoRows} 
         previousBalance={previousBalance}
         currentBalance={currentBalance}
-        selectedMonth={month}
-        selectedYear={year}
+        from={from}
+        to={to}
       />
     </div>
   );

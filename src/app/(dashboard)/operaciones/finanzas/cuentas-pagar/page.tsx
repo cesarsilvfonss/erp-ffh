@@ -20,12 +20,32 @@ export default async function CuentasPagarPage() {
     include: { category: true, batch: true }
   });
 
+  // Lotes de compras de hacienda (sourceId = batchId)
+  const batchIds = payables.filter(p => p.type === 'BATCH_PURCHASE').map(p => p.sourceId);
+  const batches = await prisma.batch.findMany({
+    where: { id: { in: batchIds } },
+    select: { id: true, batchNumber: true }
+  });
+
   const payablesWithDetails = payables.map(p => {
     if (p.type === 'EXPENSE') {
       const exp = expenses.find(e => e.id === p.sourceId);
-      return { ...p, expenseDetail: exp };
+      return { ...p, expenseDetail: exp, batchNumber: exp?.batch?.batchNumber ?? null };
     }
-    return p;
+    if (p.type === 'BATCH_PURCHASE') {
+      const b = batches.find(x => x.id === p.sourceId);
+      return { ...p, batchNumber: b?.batchNumber ?? null };
+    }
+    return { ...p, batchNumber: null };
+  });
+
+  // Primero lo pendiente (por vencimiento más próximo) y después lo pagado (más reciente primero)
+  payablesWithDetails.sort((a, b) => {
+    const aPaid = a.status === 'PAID' ? 1 : 0;
+    const bPaid = b.status === 'PAID' ? 1 : 0;
+    if (aPaid !== bPaid) return aPaid - bPaid;
+    const diff = new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+    return aPaid ? -diff : diff;
   });
 
   return (

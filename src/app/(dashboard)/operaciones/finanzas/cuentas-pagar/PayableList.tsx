@@ -13,11 +13,18 @@ export function PayableList({ payables, bankAccounts }: { payables: any[], bankA
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<"ALL" | "BATCH_PURCHASE" | "EXPENSE" | "LOAN">("ALL");
+  const [batchFilter, setBatchFilter] = useState<string>("");
+
+  // Lotes disponibles para filtrar (compras de hacienda y gastos asociados a un lote)
+  const batchOptions = Array.from(
+    new Set(payables.map(p => p.batchNumber).filter((n: any) => n !== null && n !== undefined))
+  ).sort((a: any, b: any) => b - a) as number[];
 
   const filtered = payables.filter(p => {
     const matchesSearch = p.provider.legalName.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesTab = activeTab === "ALL" || p.type === activeTab;
-    return matchesSearch && matchesTab;
+    const matchesBatch = !batchFilter || String(p.batchNumber) === batchFilter;
+    return matchesSearch && matchesTab && matchesBatch;
   });
 
   const handleTabChange = (tab: "ALL" | "BATCH_PURCHASE" | "EXPENSE" | "LOAN") => {
@@ -75,6 +82,19 @@ export function PayableList({ payables, bankAccounts }: { payables: any[], bankA
           onChange={e => setSearchTerm(e.target.value)}
           className="w-full max-w-md bg-zinc-950 border border-zinc-800 rounded-lg px-4 py-2 text-sm text-zinc-100 focus:outline-none focus:border-emerald-500/50"
         />
+
+        <select
+          value={batchFilter}
+          onChange={e => { setBatchFilter(e.target.value); setSelectedIds(new Set()); }}
+          className="bg-zinc-950 border border-zinc-800 rounded-lg px-4 py-2 text-sm text-zinc-100 focus:outline-none focus:border-emerald-500/50"
+        >
+          <option value="">TODOS LOS LOTES</option>
+          {batchOptions.map(n => (
+            <option key={n} value={String(n)}>LOTE #{n}</option>
+          ))}
+        </select>
+
+        <div className="flex-1" />
         
         {selectedIds.size > 0 && (
           <button
@@ -143,7 +163,7 @@ export function PayableList({ payables, bankAccounts }: { payables: any[], bankA
                     )}
                     {payable.type === 'BATCH_PURCHASE' && (
                       <span className="px-2 py-1 rounded text-xs font-bold bg-blue-500/10 text-blue-400 border border-blue-500/20">
-                        Compra Lote
+                        Compra Lote{payable.batchNumber ? ` #${payable.batchNumber}` : ""}
                       </span>
                     )}
                     {payable.type === 'EXPENSE' && (

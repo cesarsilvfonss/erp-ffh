@@ -41,7 +41,7 @@ export function PaymentModal({
       setPayments([{
         id: String(Date.now() + Math.random()),
         method: "TRANSFER",
-        amount: receivable.amount - receivable.paidAmount,
+        amount: Math.round((receivable.amount - receivable.paidAmount) * 100) / 100, // saldo pendiente de la factura
         reference: "",
         bankAccountId: banks[0]?.id || "",
         checkBank: "",
@@ -254,6 +254,7 @@ export function PaymentModal({
                       <input 
                         type="number" 
                         min="1"
+                        step="any"
                         required
                         value={p.amount || ""}
                         onChange={(e) => updatePaymentLine(p.id, "amount", Number(e.target.value))}

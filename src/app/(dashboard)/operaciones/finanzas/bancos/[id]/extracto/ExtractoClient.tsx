@@ -4,23 +4,22 @@ import * as React from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Printer, Building2, Calendar, ChevronDown, ChevronUp } from "lucide-react";
 import Link from "next/link";
-import { format } from "date-fns";
-import { es } from "date-fns/locale";
+import { formatDatePY, startOfDayPY, todayPY } from "@/lib/dates";
 
 export function ExtractoClient({ 
   bank, 
   rows, 
   previousBalance,
   currentBalance,
-  selectedMonth,
-  selectedYear
+  from,
+  to
 }: { 
   bank: any, 
   rows: any[], 
   previousBalance: number,
   currentBalance: number,
-  selectedMonth: number,
-  selectedYear: number
+  from: string,
+  to: string
 }) {
   const router = useRouter();
   const [expandedRows, setExpandedRows] = React.useState<Set<string>>(new Set());
@@ -39,20 +38,12 @@ export function ExtractoClient({
     window.print();
   }
 
-  function handleFilterChange(e: React.ChangeEvent<HTMLSelectElement>, type: 'month' | 'year') {
-    const val = parseInt(e.target.value);
-    const m = type === 'month' ? val : selectedMonth;
-    const y = type === 'year' ? val : selectedYear;
-    router.push(`/operaciones/finanzas/bancos/${bank.id}/extracto?month=${m}&year=${y}`);
+  function applyRange(newFrom: string, newTo: string) {
+    if (!newFrom || !newTo) return;
+    router.push(`/operaciones/finanzas/bancos/${bank.id}/extracto?from=${newFrom}&to=${newTo}`);
   }
 
-  const months = [
-    "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", 
-    "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
-  ];
-  
-  const currentYear = new Date().getFullYear();
-  const years = Array.from({length: 5}, (_, i) => currentYear - i);
+  const fmtYmd = (ymd: string) => formatDatePY(startOfDayPY(ymd));
 
   return (
     <div className="bg-zinc-950 min-h-screen text-zinc-100 p-6 md:p-8 print:p-0 print:bg-white print:text-black">
@@ -66,25 +57,25 @@ export function ExtractoClient({
           >
             <ArrowLeft className="w-5 h-5" />
           </Link>
-          <div className="flex items-center gap-2">
-            <select 
-              value={selectedMonth}
-              onChange={(e) => handleFilterChange(e, 'month')}
-              className="bg-zinc-900 border border-zinc-800 rounded-lg px-4 py-2 text-zinc-100 focus:border-emerald-500 focus:outline-none"
-            >
-              {months.map((m, i) => (
-                <option key={i} value={i}>{m}</option>
-              ))}
-            </select>
-            <select 
-              value={selectedYear}
-              onChange={(e) => handleFilterChange(e, 'year')}
-              className="bg-zinc-900 border border-zinc-800 rounded-lg px-4 py-2 text-zinc-100 focus:border-emerald-500 focus:outline-none"
-            >
-              {years.map(y => (
-                <option key={y} value={y}>{y}</option>
-              ))}
-            </select>
+          <div className="flex flex-wrap items-center gap-2">
+            <Calendar className="w-4 h-4 text-zinc-500" />
+            <span className="text-sm text-zinc-400">Desde</span>
+            <input
+              type="date"
+              value={from}
+              max={to}
+              onChange={(e) => applyRange(e.target.value, to)}
+              className="bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-zinc-100 focus:border-emerald-500 focus:outline-none [color-scheme:dark]"
+            />
+            <span className="text-sm text-zinc-400">Hasta</span>
+            <input
+              type="date"
+              value={to}
+              min={from}
+              max={todayPY()}
+              onChange={(e) => applyRange(from, e.target.value)}
+              className="bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-zinc-100 focus:border-emerald-500 focus:outline-none [color-scheme:dark]"
+            />
           </div>
         </div>
         
@@ -117,7 +108,7 @@ export function ExtractoClient({
             <div className="text-right">
               <p className="text-sm text-zinc-500 print:text-gray-500 mb-1">Período de Extracto</p>
               <p className="text-xl font-medium text-zinc-200 print:text-black">
-                {months[selectedMonth]} {selectedYear}
+                {fmtYmd(from)} al {fmtYmd(to)}
               </p>
               
               <div className="mt-6 p-4 bg-zinc-900/50 print:bg-gray-50 border border-zinc-800 print:border-gray-300 rounded-xl inline-block text-left">
@@ -170,7 +161,7 @@ export function ExtractoClient({
                       <React.Fragment key={row.id}>
                         <tr className="hover:bg-zinc-800/30 transition-colors">
                           <td className="px-6 py-3 text-zinc-300 print:text-black whitespace-nowrap">
-                            {format(new Date(row.date), "dd/MM/yyyy", { locale: es })}
+                            {formatDatePY(row.date)}
                           </td>
                           <td className="px-6 py-3 text-zinc-300 print:text-gray-800">
                             <div className="flex items-center gap-2">
