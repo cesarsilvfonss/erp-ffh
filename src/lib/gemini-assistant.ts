@@ -112,11 +112,16 @@ ${customInstructions ? `\nINSTRUCCIONES ADICIONALES DEL ADMINISTRADOR:\n${custom
 }
 
 const FALLBACK_MODELS = [
+  "gemini-3-flash-preview",
+  "gemini-3.5-flash-lite",
+  "gemini-3.1-flash-lite",
+  "gemini-flash-lite-latest",
   "gemini-3.6-flash",
   "gemini-3.5-flash",
   "gemini-3.8-flash",
-  "gemini-4-argon",
 ];
+
+let lastWorkingModel: string | null = null;
 
 async function callGeminiWithFallback(
   apiKey: string,
@@ -124,14 +129,22 @@ async function callGeminiWithFallback(
 ): Promise<any> {
   let lastError: any = null;
 
-  for (const model of FALLBACK_MODELS) {
+  const orderedModels = lastWorkingModel
+    ? [
+        lastWorkingModel,
+        ...FALLBACK_MODELS.filter((m) => m !== lastWorkingModel),
+      ]
+    : FALLBACK_MODELS;
+
+  for (const model of orderedModels) {
     try {
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(
         apiKey
       )}`;
-      const { status, data, rawText } = await ipv4PostJson(url, payload, 45000);
+      const { status, data, rawText } = await ipv4PostJson(url, payload, 25000);
 
       if (status >= 200 && status < 300 && data?.candidates?.length) {
+        lastWorkingModel = model;
         return data;
       }
 
